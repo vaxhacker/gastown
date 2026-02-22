@@ -306,6 +306,40 @@ func TestFormatTimeAgo(t *testing.T) {
 	}
 }
 
+func TestParseMQRigAndIDArgs(t *testing.T) {
+	tests := []struct {
+		name        string
+		args        []string
+		wantRigName string
+		wantID      string
+	}{
+		{
+			name:        "infer rig from cwd with single arg",
+			args:        []string{"gt-mr-123"},
+			wantRigName: "",
+			wantID:      "gt-mr-123",
+		},
+		{
+			name:        "explicit rig and id",
+			args:        []string{"gastown", "gt-mr-123"},
+			wantRigName: "gastown",
+			wantID:      "gt-mr-123",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotRigName, gotID := parseMQRigAndIDArgs(tt.args)
+			if gotRigName != tt.wantRigName {
+				t.Fatalf("parseMQRigAndIDArgs() rig = %q, want %q", gotRigName, tt.wantRigName)
+			}
+			if gotID != tt.wantID {
+				t.Fatalf("parseMQRigAndIDArgs() id = %q, want %q", gotID, tt.wantID)
+			}
+		})
+	}
+}
+
 // contains checks if s contains substr (helper for styled output)
 func contains(s, substr string) bool {
 	return len(s) >= len(substr) && (s == substr || len(substr) == 0 ||
@@ -378,7 +412,7 @@ func TestMRFilteringByLabel(t *testing.T) {
 			issue: &beads.Issue{
 				ID:     "mr-1",
 				Title:  "Merge: test-branch",
-				Type:   "task", // Wrong type (default from bd create)
+				Type:   "task",                       // Wrong type (default from bd create)
 				Labels: []string{"gt:merge-request"}, // Correct label
 			},
 			wantIsMR: true,
