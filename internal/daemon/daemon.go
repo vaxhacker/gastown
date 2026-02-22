@@ -459,6 +459,10 @@ func (d *Daemon) heartbeat(state *State) {
 	// 7. Process lifecycle requests
 	d.processLifecycleRequests()
 
+	// 8. Auto-dismiss Gemini retry dialogs ("Keep trying" / "Stop") so
+	// autonomous sessions cannot deadlock on interactive capacity prompts.
+	d.autoRetryGeminiDialogs()
+
 	// 9. (Removed) Stale agent check - violated "discover, don't track"
 
 	// 10. Check for GUPP violations (agents with work-on-hook not progressing)

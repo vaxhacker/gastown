@@ -897,6 +897,61 @@ func identityToBDActor(identity string) string {
 	}
 }
 
+// autoRetryGeminiDialogs scans live tmux sessions for Gemini capacity/retry dialogs
+// and auto-selects the default "Keep trying" option by pressing Enter.
+func (d *Daemon) autoRetryGeminiDialogs() {
+	if d.tmux == nil {
+		return
+	}
+
+	sessions, err := d.tmux.ListSessions()
+	if err != nil {
+		d.logger.Printf("Warning: failed to list tmux sessions for Gemini retry scan: %v", err)
+		return
+	}
+
+	for _, sessionID := range sessions {
+		// Skip dead sessions quickly to avoid noisy capture errors.
+		if !d.tmux.IsAgentAlive(sessionID) {
+			continue
+		}
+
+		content, err := d.tmux.CapturePane(sessionID, 80)
+		if err != nil {
+			continue
+		}
+		if !isGeminiRetryDialog(content) {
+			continue
+		}
+
+		if err := d.tmux.SendKeysRaw(sessionID, "Enter"); err != nil {
+			d.logger.Printf("Warning: failed to auto-retry Gemini dialog in %s: %v", sessionID, err)
+			continue
+		}
+		d.logger.Printf("Auto-retried Gemini capacity dialog in %s", sessionID)
+	}
+}
+
+// isGeminiRetryDialog detects Gemini's interactive retry/capacity dialogs that
+// can deadlock unattended sessions.
+func isGeminiRetryDialog(content string) bool {
+	if content == "" {
+		return false
+	}
+
+	normalized := strings.ToLower(strings.ReplaceAll(content, "\u00a0", " "))
+	hasGeminiHint := strings.Contains(normalized, "currently experiencing high demand") ||
+		strings.Contains(normalized, "/model to switch models") ||
+		strings.Contains(normalized, "no capacity available for model") ||
+		strings.Contains(normalized, "exhausted your capacity on this model") ||
+		strings.Contains(normalized, "timed out")
+	hasRetryChoice := strings.Contains(normalized, "keep trying") ||
+		strings.Contains(normalized, "try again")
+	hasStopChoice := strings.Contains(normalized, "2. stop")
+
+	return hasGeminiHint && hasRetryChoice && hasStopChoice
+}
+
 // GUPPViolationTimeout is how long an agent can have work on hook without
 // progressing before it's considered a GUPP (Gas Town Universal Propulsion
 // Principle) violation. GUPP states: if you have work on your hook, you run it.
