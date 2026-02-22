@@ -192,9 +192,20 @@ func warnIfTownRootOffMain() {
 // We use an environment variable since the binary restarts on each command.
 var staleBinaryWarned = os.Getenv("GT_STALE_WARNED") == "1"
 
+// staleBinaryQuiet suppresses stale binary warnings entirely.
+// Set GT_STALE_QUIET=1 to silence, or warnings are auto-suppressed for agents (GT_ROLE set).
+var staleBinaryQuiet = os.Getenv("GT_STALE_QUIET") == "1" || os.Getenv("GT_ROLE") != ""
+
 // checkStaleBinaryWarning checks if the installed binary is stale and prints a warning.
 // This is a non-blocking check - errors are silently ignored.
+// Warnings are suppressed for agent sessions (GT_ROLE set) since agents cannot
+// rebuild the binary themselves, and upstream pushes make this extremely noisy.
 func checkStaleBinaryWarning() {
+	// Suppress in agent mode or when explicitly silenced
+	if staleBinaryQuiet {
+		return
+	}
+
 	// Only warn once per shell session
 	if staleBinaryWarned {
 		return
