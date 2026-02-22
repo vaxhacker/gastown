@@ -716,23 +716,14 @@ func buildRestartCommand(sessionName string) (string, error) {
 	//
 	// Check if current session is using a non-default agent (GT_AGENT env var).
 	// If so, preserve it across handoff by using the override variant.
-	// Fall back to tmux session environment if process env doesn't have it and
-	// the tmux session belongs to this same town root; this prevents unrelated
-	// sessions from leaking GT_AGENT into restart command resolution.
+	// Fall back to tmux session environment if process env doesn't have it, but
+	// only for self-handoff. Looking up arbitrary session env makes command
+	// resolution depend on ambient tmux state and can override role_agents.
 	currentAgent := os.Getenv("GT_AGENT")
-	if currentAgent == "" && tmux.IsInsideTmux() {
+	if currentAgent == "" && tmux.IsInsideTmux() && tmux.CurrentSessionName() == sessionName {
 		t := tmux.NewTmux()
-		allowTmuxAgentFallback := false
-		if sessionRoot, err := t.GetEnvironment(sessionName, "GT_ROOT"); err == nil && sessionRoot != "" {
-			allowTmuxAgentFallback = filepath.Clean(sessionRoot) == filepath.Clean(townRoot)
-		} else if currentSession, err := getCurrentTmuxSession(); err == nil && currentSession == sessionName {
-			// Legacy sessions may lack GT_ROOT; allow fallback for self-handoffs.
-			allowTmuxAgentFallback = true
-		}
-		if allowTmuxAgentFallback {
-			if val, err := t.GetEnvironment(sessionName, "GT_AGENT"); err == nil && val != "" {
-				currentAgent = val
-			}
+		if val, err := t.GetEnvironment(sessionName, "GT_AGENT"); err == nil && val != "" {
+			currentAgent = val
 		}
 	}
 	var runtimeCmd string
