@@ -16,6 +16,9 @@ func setupHandoffTestRegistry(t *testing.T) {
 	t.Helper()
 	reg := session.NewPrefixRegistry()
 	reg.Register("gt", "gastown")
+	// Register a test-only prefix so session names can avoid colliding with
+	// live tmux sessions (e.g. real "gt-witness" in a developer workspace).
+	reg.Register("gtt", "gastown")
 	old := session.DefaultRegistry()
 	session.SetDefaultRegistry(reg)
 	t.Cleanup(func() { session.SetDefaultRegistry(old) })
@@ -164,7 +167,7 @@ func TestBuildRestartCommand_UsesRoleAgentsWhenNoAgentOverride(t *testing.T) {
 		t.Fatalf("chdir witness dir: %v", err)
 	}
 
-	cmd, err := buildRestartCommand("gt-witness")
+	cmd, err := buildRestartCommand("gtt-witness")
 	if err != nil {
 		t.Fatalf("buildRestartCommand: %v", err)
 	}
