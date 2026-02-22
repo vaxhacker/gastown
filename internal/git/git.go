@@ -411,10 +411,10 @@ func (g *Git) CommitAll(message string) error {
 
 // GitStatus represents the status of the working directory.
 type GitStatus struct {
-	Clean    bool
-	Modified []string
-	Added    []string
-	Deleted  []string
+	Clean     bool
+	Modified  []string
+	Added     []string
+	Deleted   []string
 	Untracked []string
 }
 
@@ -784,7 +784,11 @@ func (g *Git) IsEmpty() (bool, error) {
 
 // RemoteBranchExists checks if a branch exists on the remote.
 func (g *Git) RemoteBranchExists(remote, branch string) (bool, error) {
-	out, err := g.run("ls-remote", "--heads", remote, branch)
+	ref := branch
+	if !strings.HasPrefix(ref, "refs/heads/") {
+		ref = "refs/heads/" + branch
+	}
+	out, err := g.run("ls-remote", "--heads", remote, ref)
 	if err != nil {
 		return false, err
 	}
@@ -1145,8 +1149,8 @@ type UncommittedWorkStatus struct {
 	StashCount            int
 	UnpushedCommits       int
 	// Details for error messages
-	ModifiedFiles   []string
-	UntrackedFiles  []string
+	ModifiedFiles  []string
+	UntrackedFiles []string
 }
 
 // Clean returns true if there is no uncommitted work.
