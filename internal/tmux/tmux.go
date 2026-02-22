@@ -39,11 +39,11 @@ var validSessionNameRe = regexp.MustCompile(`^[a-zA-Z0-9_-]+$`)
 
 // Common errors
 var (
-	ErrNoServer            = errors.New("no tmux server running")
-	ErrSessionExists       = errors.New("session already exists")
-	ErrSessionNotFound     = errors.New("session not found")
-	ErrInvalidSessionName  = errors.New("invalid session name")
-	ErrIdleTimeout         = errors.New("agent not idle before timeout")
+	ErrNoServer           = errors.New("no tmux server running")
+	ErrSessionExists      = errors.New("session already exists")
+	ErrSessionNotFound    = errors.New("session not found")
+	ErrInvalidSessionName = errors.New("invalid session name")
+	ErrIdleTimeout        = errors.New("agent not idle before timeout")
 )
 
 // validateSessionName checks that a session name contains only safe characters.
@@ -1046,14 +1046,48 @@ func (t *Tmux) NudgePane(pane, message string) error {
 	return fmt.Errorf("failed to send Enter after 3 attempts: %w", lastErr)
 }
 
-// AcceptBypassPermissionsWarning dismisses the Claude Code bypass permissions warning dialog.
-// When Claude starts with --dangerously-skip-permissions, it shows a warning dialog that
-// requires pressing Down arrow to select "Yes, I accept" and then Enter to confirm.
-// This function checks if the warning is present before sending keys to avoid interfering
-// with sessions that don't show the warning (e.g., already accepted or different config).
+// DetectBlockingDialogType inspects pane content and returns a known blocking
+// dialog type that requires keyboard confirmation before work can continue.
+// Returns empty string if no known blocking dialog is detected.
+func DetectBlockingDialogType(content string) string {
+	if strings.Contains(content, "Bypass Permissions mode") {
+		return "bypass-permissions"
+	}
+
+	lower := strings.ToLower(content)
+
+	// Gemini fallback dialogs can block unattended sessions until Enter is pressed.
+	hasRetryStopChoices := strings.Contains(lower, "keep trying") && strings.Contains(lower, "stop")
+	if hasRetryStopChoices && (strings.Contains(lower, "usage limit reached for") ||
+		strings.Contains(lower, "currently experiencing high demand") ||
+		strings.Contains(lower, "don't have access to") ||
+		strings.Contains(lower, "unable to reach") ||
+		strings.Contains(lower, "model endpoint") ||
+		strings.Contains(lower, "fetch failed")) {
+		return "model-unreachable"
+	}
+	if strings.Contains(lower, "press enter to continue") &&
+		(strings.Contains(lower, "model endpoint") ||
+			strings.Contains(lower, "unreachable") ||
+			strings.Contains(lower, "unable to reach") ||
+			strings.Contains(lower, "fetch failed")) {
+		return "model-unreachable"
+	}
+
+	return ""
+}
+
+// AcceptBypassPermissionsWarning dismisses known startup/fallback dialogs that
+// block unattended agents.
 //
-// Call this after starting Claude and waiting for it to initialize (WaitForCommand),
-// but before sending any prompts.
+// Claude bypass-permissions warning:
+// - Press Down to select "Yes, I accept", then Enter.
+//
+// Gemini model-unreachable/fallback dialog:
+// - Press Enter to accept the default action ("Keep trying").
+//
+// This function checks for known dialog text before sending keys so it is safe
+// to call opportunistically after startup.
 func (t *Tmux) AcceptBypassPermissionsWarning(session string) error {
 	// Wait for the dialog to potentially render
 	time.Sleep(1 * time.Second)
@@ -1064,23 +1098,31 @@ func (t *Tmux) AcceptBypassPermissionsWarning(session string) error {
 		return err
 	}
 
-	// Look for the characteristic warning text
-	if !strings.Contains(content, "Bypass Permissions mode") {
-		// Warning not present, nothing to do
+	stallType := DetectBlockingDialogType(content)
+	if stallType == "" {
+		// No known blocking dialog present
 		return nil
 	}
 
-	// Press Down to select "Yes, I accept" (option 2)
-	if _, err := t.run("send-keys", "-t", session, "Down"); err != nil {
-		return err
-	}
+	switch stallType {
+	case "bypass-permissions":
+		// Press Down to select "Yes, I accept" (option 2)
+		if _, err := t.run("send-keys", "-t", session, "Down"); err != nil {
+			return err
+		}
 
-	// Small delay to let selection update
-	time.Sleep(200 * time.Millisecond)
+		// Small delay to let selection update
+		time.Sleep(200 * time.Millisecond)
 
-	// Press Enter to confirm
-	if _, err := t.run("send-keys", "-t", session, "Enter"); err != nil {
-		return err
+		// Press Enter to confirm
+		if _, err := t.run("send-keys", "-t", session, "Enter"); err != nil {
+			return err
+		}
+	case "model-unreachable":
+		// Accept default dialog action and unblock session.
+		if _, err := t.run("send-keys", "-t", session, "Enter"); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -2401,4 +2443,3 @@ func (t *Tmux) SetAutoRespawnHook(session string) error {
 
 	return nil
 }
-
