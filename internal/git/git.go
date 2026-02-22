@@ -861,7 +861,20 @@ func (g *Git) RemoteBranchExists(remote, branch string) (bool, error) {
 	if !strings.HasPrefix(ref, "refs/heads/") {
 		ref = "refs/heads/" + branch
 	}
-	out, err := g.run("ls-remote", "--heads", remote, ref)
+
+	// Verify against the effective push target when remotes have split
+	// fetch/push URLs (common in fork workflows). This keeps verification
+	// aligned with where Push(remote, ...) actually sends refs.
+	target := remote
+	if pushURL, err := g.GetPushURL(remote); err == nil && strings.TrimSpace(pushURL) != "" {
+		target = strings.TrimSpace(pushURL)
+	}
+
+	out, err := g.run("ls-remote", "--heads", target, ref)
+	if err != nil && target != remote {
+		// Fallback to remote name in case push URL is write-only or inaccessible.
+		out, err = g.run("ls-remote", "--heads", remote, ref)
+	}
 	if err != nil {
 		return false, err
 	}

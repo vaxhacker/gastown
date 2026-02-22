@@ -1086,6 +1086,57 @@ func TestRemoteBranchExists_UsesExactHeadRef(t *testing.T) {
 	}
 }
 
+func TestRemoteBranchExists_UsesPushURLWhenConfigured(t *testing.T) {
+	localDir, fetchRemoteDir, _ := initTestRepoWithRemote(t)
+	g := NewGit(localDir)
+
+	pushRemoteDir := filepath.Join(t.TempDir(), "push-remote.git")
+	if err := exec.Command("git", "init", "--bare", pushRemoteDir).Run(); err != nil {
+		t.Fatalf("init push remote: %v", err)
+	}
+	if err := g.ConfigurePushURL("origin", pushRemoteDir); err != nil {
+		t.Fatalf("ConfigurePushURL: %v", err)
+	}
+
+	branch := "polecat/tester/gt-456@mlpushurl"
+	if err := g.CreateBranch(branch); err != nil {
+		t.Fatalf("CreateBranch: %v", err)
+	}
+	if err := g.Checkout(branch); err != nil {
+		t.Fatalf("Checkout: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(localDir, "push-url-check.txt"), []byte("test"), 0644); err != nil {
+		t.Fatalf("write: %v", err)
+	}
+	if err := g.Add("push-url-check.txt"); err != nil {
+		t.Fatalf("Add: %v", err)
+	}
+	if err := g.Commit("push-url check"); err != nil {
+		t.Fatalf("Commit: %v", err)
+	}
+	if err := g.Push("origin", branch+":"+branch, false); err != nil {
+		t.Fatalf("Push via origin (push URL): %v", err)
+	}
+
+	// Sanity check: branch should NOT exist on fetch remote.
+	fetchOut, err := exec.Command("git", "ls-remote", "--heads", fetchRemoteDir, "refs/heads/"+branch).Output()
+	if err != nil {
+		t.Fatalf("ls-remote fetch remote: %v", err)
+	}
+	if strings.TrimSpace(string(fetchOut)) != "" {
+		t.Fatalf("expected branch to be absent on fetch remote %s, got: %s", fetchRemoteDir, string(fetchOut))
+	}
+
+	// But RemoteBranchExists should still return true because it checks push URL.
+	exists, err := g.RemoteBranchExists("origin", branch)
+	if err != nil {
+		t.Fatalf("RemoteBranchExists: %v", err)
+	}
+	if !exists {
+		t.Fatalf("expected branch %q to exist on origin push URL", branch)
+	}
+}
+
 // initTestRepoWithSubmodule creates a parent repo with a submodule for testing.
 // Returns parentDir, submoduleRemoteDir (bare).
 func initTestRepoWithSubmodule(t *testing.T) (string, string) {
