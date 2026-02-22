@@ -1,6 +1,9 @@
 package cmd
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/spf13/cobra"
 )
 
@@ -138,8 +141,31 @@ Examples:
   gt mail send mayor/ -s "Update" --stdin <<'BODY'
   Message with 'quotes' and "quotes" and $variables.
   BODY`,
-	Args: cobra.MaximumNArgs(1),
+	Args: validateMailSendArgs,
 	RunE: runMailSend,
+}
+
+func validateMailSendArgs(_ *cobra.Command, args []string) error {
+	if mailSendSelf {
+		if len(args) > 0 {
+			return fmt.Errorf("no positional arguments allowed with --self; subject and message must be passed as flags:\n  gt mail send --self -s \"Subject here\" -m \"Message body\"")
+		}
+		return nil
+	}
+
+	if len(args) == 0 {
+		return fmt.Errorf("address required (or use --self)")
+	}
+
+	if len(args) > 1 {
+		extras := make([]string, 0, len(args)-1)
+		for _, extra := range args[1:] {
+			extras = append(extras, fmt.Sprintf("%q", extra))
+		}
+		return fmt.Errorf("too many positional arguments after address %q: %s\nsubject and message must be passed as flags:\n  gt mail send %s -s \"Subject here\" -m \"Message body\"", args[0], strings.Join(extras, " "), args[0])
+	}
+
+	return nil
 }
 
 var mailInboxCmd = &cobra.Command{
