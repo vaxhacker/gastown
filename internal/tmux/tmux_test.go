@@ -16,6 +16,50 @@ func hasTmux() bool {
 	return err == nil
 }
 
+func TestDetectBlockingDialogType(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name    string
+		content string
+		want    string
+	}{
+		{
+			name:    "claude bypass permissions",
+			content: "Warning: Bypass Permissions mode is enabled",
+			want:    "bypass-permissions",
+		},
+		{
+			name: "gemini fallback dialog",
+			content: strings.Join([]string{
+				"We are currently experiencing high demand.",
+				"Keep trying",
+				"Stop",
+			}, "\n"),
+			want: "model-unreachable",
+		},
+		{
+			name:    "gemini endpoint unreachable prompt",
+			content: "Model endpoint is unreachable. Press Enter to continue.",
+			want:    "model-unreachable",
+		},
+		{
+			name:    "normal output",
+			content: "Everything looks healthy.",
+			want:    "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := DetectBlockingDialogType(tt.content)
+			if got != tt.want {
+				t.Errorf("DetectBlockingDialogType() = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestListSessionsNoServer(t *testing.T) {
 	if !hasTmux() {
 		t.Skip("tmux not installed")
@@ -1775,7 +1819,7 @@ func TestNudgeSession_WithRetry(t *testing.T) {
 func TestMatchesPromptPrefix(t *testing.T) {
 	const (
 		nbsp          = "\u00a0" // non-breaking space
-		regularPrefix = "❯ "    // default: ❯ + regular space
+		regularPrefix = "❯ "     // default: ❯ + regular space
 	)
 
 	tests := []struct {

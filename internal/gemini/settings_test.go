@@ -300,6 +300,41 @@ func TestEmbeddedTemplates_ValidJSON(t *testing.T) {
 	}
 }
 
+func TestEmbeddedTemplates_EnableRetryFetchErrors(t *testing.T) {
+	t.Parallel()
+
+	templates := []string{
+		"config/settings-autonomous.json",
+		"config/settings-interactive.json",
+	}
+
+	for _, tmpl := range templates {
+		t.Run(tmpl, func(t *testing.T) {
+			content, err := configFS.ReadFile(tmpl)
+			if err != nil {
+				t.Fatalf("Failed to read embedded template %s: %v", tmpl, err)
+			}
+
+			var parsed map[string]interface{}
+			if err := json.Unmarshal(content, &parsed); err != nil {
+				t.Fatalf("Embedded template %s is not valid JSON: %v", tmpl, err)
+			}
+
+			general, ok := parsed["general"].(map[string]interface{})
+			if !ok {
+				t.Fatalf("Template %s missing 'general' section", tmpl)
+			}
+			retryFetchErrors, ok := general["retryFetchErrors"].(bool)
+			if !ok {
+				t.Fatalf("Template %s missing boolean general.retryFetchErrors", tmpl)
+			}
+			if !retryFetchErrors {
+				t.Errorf("Template %s has general.retryFetchErrors=false, want true", tmpl)
+			}
+		})
+	}
+}
+
 func TestAutonomousTemplate_MailInjectInSessionStart(t *testing.T) {
 	content, err := configFS.ReadFile("config/settings-autonomous.json")
 	if err != nil {

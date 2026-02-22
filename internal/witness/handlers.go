@@ -1215,7 +1215,7 @@ func handleZombieCleanup(workDir, rigName, polecatName, hookBead, cleanupStatus 
 // StalledResult represents a single stalled polecat detection.
 type StalledResult struct {
 	PolecatName string // e.g., "alpha"
-	StallType   string // "bypass-permissions", "unknown-prompt"
+	StallType   string // "bypass-permissions", "model-unreachable", "unknown-prompt"
 	Action      string // "auto-dismissed", "escalated"
 	Error       error
 }
@@ -1289,11 +1289,12 @@ func DetectStalledPolecats(workDir, rigName string) *DetectStalledPolecatsResult
 			continue
 		}
 
-		// Check for bypass-permissions prompt
-		if strings.Contains(content, "Bypass Permissions mode") {
+		// Check for known blocking prompts (Claude/Gemini).
+		stallType := tmux.DetectBlockingDialogType(content)
+		if stallType != "" {
 			stalled := StalledResult{
 				PolecatName: polecatName,
-				StallType:   "bypass-permissions",
+				StallType:   stallType,
 			}
 			if err := t.AcceptBypassPermissionsWarning(sessionName); err != nil {
 				stalled.Action = "escalated"
