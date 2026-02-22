@@ -68,6 +68,21 @@ Examples:
 	},
 }
 
+var beadListCmd = &cobra.Command{
+	Use:   "list [flags]",
+	Short: "List beads (delegates to bd list)",
+	Long: `List beads from the current routed repository.
+
+This is a passthrough to 'bd list'. All bd list flags are supported.
+
+Examples:
+  gt bd list
+  gt bd list --status open
+  gt bead list --json`,
+	DisableFlagParsing: true, // Pass all flags through to bd list
+	RunE:               runBeadList,
+}
+
 var beadReadCmd = &cobra.Command{
 	Use:   "read <bead-id> [flags]",
 	Short: "Show details of a bead (alias for 'show')",
@@ -89,9 +104,18 @@ Examples:
 func init() {
 	beadMoveCmd.Flags().BoolVarP(&beadMoveDryRun, "dry-run", "n", false, "Show what would be done")
 	beadCmd.AddCommand(beadMoveCmd)
+	beadCmd.AddCommand(beadListCmd)
 	beadCmd.AddCommand(beadShowCmd)
 	beadCmd.AddCommand(beadReadCmd)
 	rootCmd.AddCommand(beadCmd)
+}
+
+func runBeadList(cmd *cobra.Command, args []string) error {
+	// Handle --help since DisableFlagParsing bypasses Cobra's help handling
+	if helped, err := checkHelpFlag(cmd, args); helped || err != nil {
+		return err
+	}
+	return execBdWithSubcommand("list", args, os.Environ())
 }
 
 // moveBeadInfo holds the essential fields we need to copy when moving beads

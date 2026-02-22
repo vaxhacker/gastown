@@ -215,8 +215,9 @@ Examples:
 }
 
 var rigStatusCmd = &cobra.Command{
-	Use:   "status [rig]",
-	Short: "Show detailed status for a specific rig",
+	Use:     "status [rig]",
+	Aliases: []string{"show"},
+	Short:   "Show detailed status for a specific rig",
 	Long: `Show detailed status for a specific rig including all workers.
 
 If no rig is specified, infers the rig from the current directory.

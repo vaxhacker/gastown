@@ -28,7 +28,7 @@ Configuration is looked up through multiple layers:
 
 Most properties use override semantics (first non-nil wins).
 Integer properties like priority_adjustment use stacking semantics (values add).`,
-	RunE: requireSubcommand,
+	RunE: runRigConfig,
 }
 
 var rigConfigShowCmd = &cobra.Command{
@@ -97,6 +97,22 @@ func init() {
 
 	rigConfigSetCmd.Flags().BoolVar(&rigConfigSetGlobal, "global", false, "Set in bead layer (persistent, synced)")
 	rigConfigSetCmd.Flags().BoolVar(&rigConfigSetBlock, "block", false, "Block inheritance for this key")
+}
+
+func runRigConfig(cmd *cobra.Command, args []string) error {
+	switch len(args) {
+	case 0:
+		rigName, err := resolveRigNameOrInfer("", "gt rig config [rig]")
+		if err != nil {
+			return err
+		}
+		return runRigConfigShow(cmd, []string{rigName})
+	case 1:
+		// Convenience path: `gt rig config <rig>` behaves like `gt rig config show <rig>`.
+		return runRigConfigShow(cmd, args)
+	default:
+		return requireSubcommand(cmd, args)
+	}
 }
 
 func runRigConfigShow(cmd *cobra.Command, args []string) error {

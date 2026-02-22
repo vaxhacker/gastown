@@ -84,12 +84,14 @@ Gracefully stops the witness monitoring agent.`,
 }
 
 var witnessStatusCmd = &cobra.Command{
-	Use:   "status <rig>",
-	Short: "Show witness status",
+	Use:     "status [rig]",
+	Aliases: []string{"show"},
+	Short:   "Show witness status",
 	Long: `Show the status of a rig's Witness.
 
-Displays running state, monitored polecats, and statistics.`,
-	Args: cobra.ExactArgs(1),
+Displays running state, monitored polecats, and statistics.
+If rig is not specified, infers it from the current directory.`,
+	Args: cobra.MaximumNArgs(1),
 	RunE: runWitnessStatus,
 }
 
@@ -239,7 +241,14 @@ type WitnessStatusOutput struct {
 }
 
 func runWitnessStatus(cmd *cobra.Command, args []string) error {
-	rigName := args[0]
+	rigName := ""
+	if len(args) > 0 {
+		rigName = args[0]
+	}
+	rigName, err := resolveRigNameOrInfer(rigName, "gt witness status [rig]")
+	if err != nil {
+		return err
+	}
 
 	// Get rig for polecat info
 	_, r, err := getRig(rigName)
