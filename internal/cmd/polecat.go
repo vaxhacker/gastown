@@ -1218,23 +1218,33 @@ func nukePolecatFull(polecatName, rigName string, mgr *polecat.Manager, r *rig.R
 		fmt.Printf("  %s deleted worktree\n", style.Success.Render("✓"))
 	}
 
-	// Step 3.5: Reject any open MRs for this branch before deleting it.
-	// Prevents MQ/git sync inconsistency where MR exists but branch is gone.
+	// Step 3.5: Handle MR safety for this branch.
+	// Remote branch deletion is only allowed when an MR already exists for the branch.
+	// When no MR exists, the remote branch is preserved so the refinery can still
+	// create an MR from it — deleting it would lose completed work (gt-3xal).
+	var allowRemoteDelete bool
 	if branchToDelete != "" {
 		bd := beads.New(r.Path)
 		mr, findErr := bd.FindMRForBranch(branchToDelete)
 		if findErr != nil {
 			fmt.Printf("  %s MR lookup failed: %v\n", style.Dim.Render("○"), findErr)
-		} else if mr != nil {
-			if err := bd.CloseWithReason("rejected: polecat nuked", mr.ID); err != nil {
-				fmt.Printf("  %s MR close failed for %s: %v\n", style.Warning.Render("⚠"), mr.ID, err)
-			} else {
-				fmt.Printf("  %s rejected MR %s (polecat nuked)\n", style.Warning.Render("⚠"), mr.ID)
+		} else if mr == nil {
+			// No MR exists yet — preserve remote branch so refinery can create one.
+			fmt.Printf("  %s no MR found for %s; preserving remote branch\n", style.Warning.Render("⚠"), branchToDelete)
+		} else {
+			allowRemoteDelete = true
+			if mr.Status == "open" {
+				if err := bd.CloseWithReason("rejected: polecat nuked", mr.ID); err != nil {
+					fmt.Printf("  %s MR close failed for %s: %v\n", style.Warning.Render("⚠"), mr.ID, err)
+					allowRemoteDelete = false
+				} else {
+					fmt.Printf("  %s rejected MR %s (polecat nuked)\n", style.Warning.Render("⚠"), mr.ID)
+				}
 			}
 		}
 	}
 
-	// Step 4: Delete branch (if we know it) — local and remote
+	// Step 4: Delete branch (if we know it) — local only; remote conditional on MR state
 	if branchToDelete != "" {
 		var repoGit *git.Git
 		bareRepoPath := filepath.Join(r.Path, ".repo.git")
@@ -1248,11 +1258,15 @@ func nukePolecatFull(polecatName, rigName string, mgr *polecat.Manager, r *rig.R
 		} else {
 			fmt.Printf("  %s deleted local branch %s\n", style.Success.Render("✓"), branchToDelete)
 		}
-		// Also delete remote branch if it exists
-		if err := repoGit.DeleteRemoteBranch("origin", branchToDelete); err != nil {
-			fmt.Printf("  %s remote branch delete: %v\n", style.Dim.Render("○"), err)
+		// Remote deletion is intentionally conservative to avoid losing un-MR'd work.
+		if allowRemoteDelete {
+			if err := repoGit.DeleteRemoteBranch("origin", branchToDelete); err != nil {
+				fmt.Printf("  %s remote branch delete: %v\n", style.Dim.Render("○"), err)
+			} else {
+				fmt.Printf("  %s deleted remote branch %s\n", style.Success.Render("✓"), branchToDelete)
+			}
 		} else {
-			fmt.Printf("  %s deleted remote branch %s\n", style.Success.Render("✓"), branchToDelete)
+			fmt.Printf("  %s preserved remote branch %s\n", style.Dim.Render("○"), branchToDelete)
 		}
 	}
 
