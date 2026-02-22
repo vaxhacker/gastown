@@ -8,6 +8,17 @@ This file exists for compatibility with tools that look for AGENTS.md.
 
 Full context is injected by `gt prime` at session start.
 
+## Git Push Policy
+
+**The fork is the working repo.** All agent work pushes to the fork (`vaxhacker/*`), never upstream (`steveyegge/*`).
+
+- **Push to**: `origin` (which pushes to `vaxhacker/<repo>`)
+- **Never create PRs** to upstream (`steveyegge/<repo>`) — not for syncing, not for features, not for anything
+- **Branch rules**: Push to `main` (crew/mayor) or `polecat/*` (polecats). No feature branches.
+- Upstream sync is a mayor-level operation done manually, not by agents
+
+If `git remote -v` shows different fetch/push URLs (fetch=steveyegge, push=vaxhacker), that is intentional. Just `git push origin main`.
+
 <!-- beads-agent-instructions-v2 -->
 
 ---
