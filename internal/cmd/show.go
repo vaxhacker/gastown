@@ -7,7 +7,6 @@ import (
 	"syscall"
 
 	"github.com/spf13/cobra"
-	"github.com/steveyegge/gastown/internal/beads"
 )
 
 func init() {
@@ -49,12 +48,11 @@ func runShow(cmd *cobra.Command, args []string) error {
 
 // execBdShow replaces the current process with 'bd show'.
 func execBdShow(args []string) error {
-	return execBdWithSubcommand("show", args, beads.StripBdBranch(os.Environ()))
+	return execBdWithSubcommand("show", args)
 }
 
 // execBdWithSubcommand replaces the current process with `bd <subcommand> ...args`.
-// Callers control env so read-only operations can strip BD_BRANCH when appropriate.
-func execBdWithSubcommand(subcommand string, args []string, env []string) error {
+func execBdWithSubcommand(subcommand string, args []string) error {
 	bdPath, err := exec.LookPath("bd")
 	if err != nil {
 		return fmt.Errorf("bd not found in PATH: %w", err)
@@ -64,5 +62,5 @@ func execBdWithSubcommand(subcommand string, args []string, env []string) error 
 	// argv[0] must be the program name for exec
 	fullArgs := append([]string{"bd", subcommand}, args...)
 
-	return syscall.Exec(bdPath, fullArgs, env)
+	return syscall.Exec(bdPath, fullArgs, os.Environ())
 }
