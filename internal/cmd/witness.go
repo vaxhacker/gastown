@@ -57,11 +57,18 @@ Self-Cleaning Model: Polecats nuke themselves after work. The Witness handles
 crash recovery (restart with hooked work) and orphan cleanup (nuke abandoned
 sandboxes). There is no "idle" state - polecats either have work or don't exist.
 
+MODES:
+  Background (default): Spawns a Claude agent in a tmux session.
+  Foreground (--foreground): Runs the event-driven patrol loop directly.
+    This is the Go-native patrol that reacts to .events.jsonl feed events
+    in near-realtime and runs periodic full-discovery patrols as fallback.
+    No Claude agent, no formula wisps, no wisp churn.
+
 Examples:
   gt witness start greenplace
+  gt witness start greenplace --foreground    # event-driven Go patrol
   gt witness start greenplace --agent codex
-  gt witness start greenplace --env ANTHROPIC_MODEL=claude-3-haiku
-  gt witness start greenplace --foreground`,
+  gt witness start greenplace --env ANTHROPIC_MODEL=claude-3-haiku`,
 	Args: cobra.ExactArgs(1),
 	RunE: runWitnessStart,
 }
@@ -178,8 +185,7 @@ func runWitnessStart(cmd *cobra.Command, args []string) error {
 	}
 
 	if witnessForeground {
-		fmt.Printf("%s Note: Foreground mode no longer runs patrol loop\n", style.Dim.Render("⚠"))
-		fmt.Printf("  %s\n", style.Dim.Render("Patrol logic is now handled by mol-witness-patrol molecule"))
+		// Foreground mode ran successfully (event loop exited cleanly)
 		return nil
 	}
 

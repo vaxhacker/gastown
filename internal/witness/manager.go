@@ -1,12 +1,15 @@
 package witness
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"log"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/steveyegge/gastown/internal/beads"
@@ -109,8 +112,9 @@ func (m *Manager) Start(foreground bool, agentOverride string, envOverrides []st
 	sessionID := m.SessionName()
 
 	if foreground {
-		// Foreground mode is deprecated - patrol logic moved to mol-witness-patrol
-		return fmt.Errorf("foreground mode is deprecated; use background mode (remove --foreground flag)")
+		// Foreground mode runs the event-driven patrol loop directly.
+		// This is the replacement for the mol-witness-patrol formula.
+		return m.runForegroundPatrol()
 	}
 
 	// Check if session already exists
@@ -274,6 +278,41 @@ func buildWitnessStartCommand(rigPath, rigName, townRoot, sessionName, agentOver
 		return "", fmt.Errorf("building startup command: %w", err)
 	}
 	return command, nil
+}
+
+// runForegroundPatrol runs the event-driven patrol loop in the foreground.
+// This replaces the mol-witness-patrol formula, eliminating the molecule-per-cycle
+// pattern and its associated wisp churn.
+func (m *Manager) runForegroundPatrol() error {
+	townRoot := m.townRoot()
+	witnessDir := m.witnessDir()
+
+	config := EventLoopConfig{
+		WorkDir:            witnessDir,
+		RigName:            m.rig.Name,
+		TownRoot:           townRoot,
+		FullPatrolInterval: 5 * time.Minute,
+		EventDebounce:      2 * time.Second,
+	}
+
+	loop, err := NewEventLoop(config)
+	if err != nil {
+		return fmt.Errorf("creating event loop: %w", err)
+	}
+
+	log.Printf("witness: starting event-driven patrol for %s", m.rig.Name)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
+	go func() {
+		<-sigCh
+		cancel()
+	}()
+
+	return loop.Run(ctx)
 }
 
 // Stop stops the witness.
