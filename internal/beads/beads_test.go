@@ -2466,6 +2466,69 @@ func TestIsAgentBead(t *testing.T) {
 	}
 }
 
+// TestFilterBeadsEnv_StripsBdBranch verifies BD_BRANCH is now filtered
+// alongside BD_ACTOR, BEADS_*, etc. in isolated/test mode.
+func TestFilterBeadsEnv_StripsBdBranch(t *testing.T) {
+	environ := []string{
+		"PATH=/usr/bin",
+		"BD_ACTOR=gastown/polecats/Toast",
+		"BD_BRANCH=polecat-Toast-12345",
+		"BEADS_DIR=/tmp/beads",
+		"GT_ROOT=/home/user/gt",
+		"HOME=/home/user",
+		"TERM=xterm",
+	}
+	got := filterBeadsEnv(environ)
+
+	// Should only have PATH and TERM
+	for _, env := range got {
+		if strings.HasPrefix(env, "BD_ACTOR=") {
+			t.Error("filterBeadsEnv did not strip BD_ACTOR")
+		}
+		if strings.HasPrefix(env, "BD_BRANCH=") {
+			t.Error("filterBeadsEnv did not strip BD_BRANCH")
+		}
+		if strings.HasPrefix(env, "BEADS_") {
+			t.Error("filterBeadsEnv did not strip BEADS_*")
+		}
+		if strings.HasPrefix(env, "GT_ROOT=") {
+			t.Error("filterBeadsEnv did not strip GT_ROOT")
+		}
+		if strings.HasPrefix(env, "HOME=") {
+			t.Error("filterBeadsEnv did not strip HOME")
+		}
+	}
+
+	if len(got) != 2 {
+		t.Errorf("filterBeadsEnv returned %d items, want 2 (PATH, TERM): %v", len(got), got)
+	}
+}
+
+// TestFilterBeadsEnv_PreservesBdBranchSuffix verifies filterBeadsEnv strips
+// BD_BRANCH= but NOT BD_BRANCH_SUFFIX= — the trailing = in the prefix match
+// prevents false positives on similarly-named vars.
+func TestFilterBeadsEnv_PreservesBdBranchSuffix(t *testing.T) {
+	environ := []string{
+		"BD_BRANCH=polecat-strip-me",
+		"BD_BRANCH_SUFFIX=keep-me",
+		"PATH=/usr/bin",
+	}
+	got := filterBeadsEnv(environ)
+
+	hasSuffix := false
+	for _, e := range got {
+		if strings.HasPrefix(e, "BD_BRANCH=") {
+			t.Error("filterBeadsEnv did not strip BD_BRANCH=")
+		}
+		if e == "BD_BRANCH_SUFFIX=keep-me" {
+			hasSuffix = true
+		}
+	}
+	if !hasSuffix {
+		t.Error("filterBeadsEnv incorrectly stripped BD_BRANCH_SUFFIX")
+	}
+}
+
 // TestFilterBeadsEnv_NilInput verifies filterBeadsEnv does not panic on nil.
 func TestFilterBeadsEnv_NilInput(t *testing.T) {
 	got := filterBeadsEnv(nil)
@@ -2685,8 +2748,8 @@ func TestBuildRunEnv(t *testing.T) {
 		{
 			name:           "isolated strips all beads vars",
 			isolated:       true,
-			envVars:        map[string]string{"BD_ACTOR": "test-actor", "BEADS_DIR": "/tmp/beads"},
-			mustNotContain: []string{"BD_ACTOR=", "BEADS_DIR="},
+			envVars:        map[string]string{"BD_BRANCH": "polecat-test-123", "BD_ACTOR": "test-actor", "BEADS_DIR": "/tmp/beads"},
+			mustNotContain: []string{"BD_BRANCH=", "BD_ACTOR=", "BEADS_DIR="},
 		},
 	}
 
@@ -2740,8 +2803,8 @@ func TestBuildRoutingEnv(t *testing.T) {
 		{
 			name:           "isolated strips all beads vars",
 			isolated:       true,
-			envVars:        map[string]string{"BD_ACTOR": "test-actor", "BEADS_DIR": "/tmp/beads"},
-			mustNotContain: []string{"BD_ACTOR=", "BEADS_DIR="},
+			envVars:        map[string]string{"BD_BRANCH": "polecat-test-123", "BD_ACTOR": "test-actor", "BEADS_DIR": "/tmp/beads"},
+			mustNotContain: []string{"BD_BRANCH=", "BD_ACTOR=", "BEADS_DIR="},
 		},
 	}
 

@@ -134,11 +134,10 @@ func runSlingFormula(args []string) error {
 
 	// Step 1: Cook the formula (ensures proto exists)
 	fmt.Printf("  Cooking formula...\n")
-	cookArgs := []string{"cook", formulaName}
-	cookCmd := exec.Command("bd", cookArgs...)
-	cookCmd.Dir = formulaWorkDir
-	cookCmd.Stderr = os.Stderr
-	if err := cookCmd.Run(); err != nil {
+	if err := BdCmd("cook", formulaName).
+		Dir(formulaWorkDir).
+		WithGTRoot(townRoot).
+		Run(); err != nil {
 		rollbackSpawned("")
 		return fmt.Errorf("cooking formula: %w", err)
 	}
@@ -151,15 +150,11 @@ func runSlingFormula(args []string) error {
 	}
 	wispArgs = append(wispArgs, "--json")
 
-	// Force auto-commit=on so wisp writes are committed to HEAD immediately.
-	// In server mode, bd defaults to auto-commit=off, leaving writes in a
-	// per-connection working set that vanishes when the process exits.
-	// CreateDoltBranch forks from HEAD, so it won't see uncommitted writes.
-	wispArgs = append([]string{"--dolt-auto-commit", "on"}, wispArgs...)
-	wispCmd := exec.Command("bd", wispArgs...)
-	wispCmd.Dir = formulaWorkDir
-	wispCmd.Stderr = os.Stderr // Show wisp errors to user
-	wispOut, err := wispCmd.Output()
+	wispOut, err := BdCmd(wispArgs...).
+		Dir(formulaWorkDir).
+		WithAutoCommit().
+		WithGTRoot(townRoot).
+		Output()
 	if err != nil {
 		rollbackSpawned("")
 		return fmt.Errorf("creating wisp: %w", err)

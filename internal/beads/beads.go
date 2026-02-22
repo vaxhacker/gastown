@@ -170,10 +170,9 @@ type SyncStatus struct {
 
 // Beads wraps bd CLI operations for a working directory.
 type Beads struct {
-	workDir    string
-	beadsDir   string // Optional BEADS_DIR override for cross-database access
-	isolated   bool   // If true, suppress inherited beads env vars (for test isolation)
-	serverPort int    // If set, pass --server-port to bd init and GT_DOLT_PORT to env
+	workDir  string
+	beadsDir string // Optional BEADS_DIR override for cross-database access
+	isolated bool // If true, suppress inherited beads env vars (for test isolation)
 
 	// Lazy-cached town root for routing resolution.
 	// Populated on first call to getTownRoot() to avoid filesystem walk on every operation.
@@ -390,10 +389,7 @@ func isSubprocessCrash(err error) bool {
 
 // buildRunEnv builds the environment for run() calls.
 // In isolated mode: strips all beads-related env vars for test isolation.
-// Otherwise: strips inherited BEADS_DIR so the caller can append the correct value.
-// Without this, getenv() returns the first occurrence, so an inherited BEADS_DIR
-// (e.g., from a parent process or shell context) would shadow the explicit value
-// appended by run(). This was the root cause of gt-uygpe / GH #803.
+// Otherwise: passes through the current environment.
 func (b *Beads) buildRunEnv() []string {
 	if b.isolated {
 		env := filterBeadsEnv(os.Environ())
@@ -402,7 +398,7 @@ func (b *Beads) buildRunEnv() []string {
 		}
 		return env
 	}
-	return stripEnvPrefixes(os.Environ(), "BEADS_DIR=")
+	return os.Environ()
 }
 
 // buildRoutingEnv builds the environment for runWithRouting() calls.
@@ -410,11 +406,7 @@ func (b *Beads) buildRunEnv() []string {
 // In isolated mode: also strips BD_ACTOR, BEADS_*, GT_ROOT, HOME.
 func (b *Beads) buildRoutingEnv() []string {
 	if b.isolated {
-		env := filterBeadsEnv(os.Environ())
-		if b.serverPort > 0 {
-			env = append(env, fmt.Sprintf("GT_DOLT_PORT=%d", b.serverPort))
-		}
-		return env
+		return filterBeadsEnv(os.Environ())
 	}
 	return stripEnvPrefixes(os.Environ(), "BEADS_DIR=")
 }

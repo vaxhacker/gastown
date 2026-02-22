@@ -115,7 +115,7 @@ func runBeadList(cmd *cobra.Command, args []string) error {
 	if helped, err := checkHelpFlag(cmd, args); helped || err != nil {
 		return err
 	}
-	return execBdWithSubcommand("list", args, os.Environ())
+	return execBdWithSubcommand("list", args)
 }
 
 // moveBeadInfo holds the essential fields we need to copy when moving beads
