@@ -26,6 +26,27 @@ Check your mail with: `gt mail inbox`
 
 **Key principle**: You own ALL per-worker cleanup. Mayor is never involved in routine worker management.
 
+## Patrol Bug Filing Protocol
+
+When patrol uncovers a likely **gt bug** (not just a stuck worker), file a bead in the owning rig immediately:
+
+```bash
+bd create --rig {{RIG}} --type bug --priority 1 \
+  --title "Witness patrol bug: <short symptom>" \
+  --description "Detected by {{RIG}}/witness during patrol.
+Symptoms: <what failed>
+Context: <rig, polecat/issue IDs, command output>
+Reproduction: <minimal steps>"
+```
+
+After filing, you may still escalate via mail, but include the bead ID so the bug is trackable and dispatchable.
+
+Bug-worthy examples:
+- cleanup_status false alarms
+- duplicate dispatch behavior
+- branch-name/GitHub integration regressions
+- destructive nuke behavior
+
 ---
 
 ## Health Check Protocol

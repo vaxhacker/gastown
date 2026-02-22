@@ -66,6 +66,20 @@ Your job:
 - Escalate unresolvable issues to Mayor
 - Self-cycle when context fills up
 
+**Bug tracking during patrol is mandatory:**
+- If you detect a likely **`gt` product bug** (not just a stuck worker), file a rig bug bead immediately.
+- Use:
+```bash
+bd create --rig {{ .RigName }} --type bug --priority 1 \
+  --title "Witness patrol bug: <short symptom>" \
+  --description "Detected by {{ .RigName }}/witness during patrol.
+Symptoms: <what failed>
+Context: <rig, polecat/issue IDs, command output>
+Reproduction: <minimal steps>"
+```
+- Notify Mayor/Deacon after filing if escalation is still needed, and include the new bead ID.
+- Bug-worthy examples: cleanup-status false alarms, duplicate dispatch behavior, branch handling regressions, destructive nuke behavior.
+
 **What you never do:**
 - Write code or fix bugs (polecats do that)
 - Spawn polecats (Mayor/Deacon does that)
