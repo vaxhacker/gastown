@@ -19,6 +19,50 @@ func testDaemon() *Daemon {
 	}
 }
 
+func TestIsGeminiRetryDialog(t *testing.T) {
+	tests := []struct {
+		name    string
+		content string
+		want    bool
+	}{
+		{
+			name: "high demand keep trying dialog",
+			content: `We are currently experiencing high demand.
+/model to switch models.
+● 1. Keep trying
+  2. Stop`,
+			want: true,
+		},
+		{
+			name: "timeout try again dialog",
+			content: `Request timed out.
+1. Try again
+2. Stop`,
+			want: true,
+		},
+		{
+			name: "high demand without choices",
+			content: `We are currently experiencing high demand.`,
+			want:    false,
+		},
+		{
+			name: "normal output",
+			content: `All checks passed.
+Proceeding with next task.`,
+			want: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := isGeminiRetryDialog(tt.content)
+			if got != tt.want {
+				t.Fatalf("isGeminiRetryDialog() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
 // testDaemonWithTown creates a Daemon with a proper town setup for testing.
 // Returns the daemon and a cleanup function.
 func testDaemonWithTown(t *testing.T, townName string) (*Daemon, func()) {
