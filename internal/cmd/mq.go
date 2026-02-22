@@ -111,17 +111,21 @@ Examples:
 }
 
 var mqRetryCmd = &cobra.Command{
-	Use:   "retry <rig> <mr-id>",
+	Use:   "retry [rig] <mr-id>",
 	Short: "Retry a failed merge request",
 	Long: `Retry a failed merge request.
 
 Resets a failed MR so it can be processed again by the refinery.
 The MR must be in a failed state (open with an error).
 
+If rig is not specified (only one argument given), infers it from
+the current directory.
+
 Examples:
   gt mq retry greenplace gp-mr-abc123
+  gt mq retry gp-mr-abc123            # infer rig from cwd
   gt mq retry greenplace gp-mr-abc123 --now`,
-	Args: cobra.ExactArgs(2),
+	Args: cobra.RangeArgs(1, 2),
 	RunE: runMQRetry,
 }
 
@@ -129,6 +133,8 @@ var mqListCmd = &cobra.Command{
 	Use:   "list [rig]",
 	Short: "Show the merge queue",
 	Long: `Show the merge queue for a rig.
+
+If rig is not specified, infers it from the current directory.
 
 Lists all pending merge requests waiting to be processed.
 
@@ -142,6 +148,7 @@ Output format:
 Examples:
   gt mq list
   gt mq list greenplace
+  gt mq list                       # infer rig from cwd
   gt mq list greenplace --ready
   gt mq list greenplace --status=open
   gt mq list greenplace --worker=Nux`,
@@ -150,17 +157,21 @@ Examples:
 }
 
 var mqRejectCmd = &cobra.Command{
-	Use:   "reject <rig> <mr-id-or-branch>",
+	Use:   "reject [rig] <mr-id-or-branch>",
 	Short: "Reject a merge request",
 	Long: `Manually reject a merge request.
 
 This closes the MR with a 'rejected' status without merging.
 The source issue is NOT closed (work is not done).
 
+If rig is not specified (only one argument given), infers it from
+the current directory.
+
 Examples:
   gt mq reject greenplace polecat/Nux/gp-xyz --reason "Does not meet requirements"
+  gt mq reject polecat/Nux/gp-xyz --reason "Does not meet requirements"  # infer rig
   gt mq reject greenplace mr-Nux-12345 --reason "Superseded by other work" --notify`,
-	Args: cobra.ExactArgs(2),
+	Args: cobra.RangeArgs(1, 2),
 	RunE: runMQReject,
 }
 
@@ -383,25 +394,24 @@ func findCurrentRig(townRoot string) (string, *rig.Rig, error) {
 }
 
 func runMQRetry(cmd *cobra.Command, args []string) error {
-	rigName := args[0]
-	mrID := args[1]
+	rigNameArg, mrIDOrBranch := parseMQRigAndIDArgs(args)
 
-	mgr, _, _, err := getRefineryManager(rigName)
+	mgr, _, rigName, err := getRefineryManager(rigNameArg)
 	if err != nil {
 		return err
 	}
 
 	// Get the MR first to show info
-	mr, err := mgr.GetMR(mrID)
+	mr, err := mgr.GetMR(mrIDOrBranch)
 	if err != nil {
 		if err == refinery.ErrMRNotFound {
-			return fmt.Errorf("merge request '%s' not found in rig '%s'", mrID, rigName)
+			return fmt.Errorf("merge request '%s' not found in rig '%s'", mrIDOrBranch, rigName)
 		}
 		return fmt.Errorf("getting merge request: %w", err)
 	}
 
 	// Show what we're retrying
-	fmt.Printf("Retrying merge request: %s\n", mrID)
+	fmt.Printf("Retrying merge request: %s\n", mrIDOrBranch)
 	fmt.Printf("  Branch: %s\n", mr.Branch)
 	fmt.Printf("  Worker: %s\n", mr.Worker)
 	if mr.Error != "" {
@@ -409,9 +419,9 @@ func runMQRetry(cmd *cobra.Command, args []string) error {
 	}
 
 	// Perform the retry
-	if err := mgr.Retry(mrID, mqRetryNow); err != nil {
+	if err := mgr.Retry(mrIDOrBranch, mqRetryNow); err != nil {
 		if err == refinery.ErrMRNotFailed {
-			return fmt.Errorf("merge request '%s' has not failed (status: %s)", mrID, mr.Status)
+			return fmt.Errorf("merge request '%s' has not failed (status: %s)", mrIDOrBranch, mr.Status)
 		}
 		return fmt.Errorf("retrying merge request: %w", err)
 	}
@@ -424,6 +434,16 @@ func runMQRetry(cmd *cobra.Command, args []string) error {
 	}
 
 	return nil
+}
+
+// parseMQRigAndIDArgs handles commands that accept either:
+//   - <rig> <id>
+//   - <id> (infer rig from cwd)
+func parseMQRigAndIDArgs(args []string) (rigName, id string) {
+	if len(args) == 1 {
+		return "", args[0]
+	}
+	return args[0], args[1]
 }
 
 func runMQReject(cmd *cobra.Command, args []string) error {
@@ -444,10 +464,9 @@ func runMQReject(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("required flag \"reason\" not set (use --reason/-r or --stdin)")
 	}
 
-	rigName := args[0]
-	mrIDOrBranch := args[1]
+	rigNameArg, mrIDOrBranch := parseMQRigAndIDArgs(args)
 
-	mgr, _, _, err := getRefineryManager(rigName)
+	mgr, _, _, err := getRefineryManager(rigNameArg)
 	if err != nil {
 		return err
 	}

@@ -2,6 +2,8 @@ package cmd
 
 import (
 	"fmt"
+	"sort"
+	"strings"
 
 	"github.com/steveyegge/gastown/internal/config"
 	"github.com/steveyegge/gastown/internal/constants"
@@ -54,7 +56,12 @@ func getRig(rigName string) (string, *rig.Rig, error) {
 	rigMgr := rig.NewManager(townRoot, rigsConfig, g)
 	r, err := rigMgr.GetRig(rigName)
 	if err != nil {
-		return "", nil, fmt.Errorf("rig '%s' not found", rigName)
+		names := rigMgr.ListRigNames()
+		sort.Strings(names)
+		if len(names) > 0 {
+			return "", nil, fmt.Errorf("rig '%s' not found (available: %s)", rigName, strings.Join(names, ", "))
+		}
+		return "", nil, fmt.Errorf("rig '%s' not found (no rigs configured)", rigName)
 	}
 
 	return townRoot, r, nil
