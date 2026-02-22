@@ -1032,6 +1032,60 @@ func TestFetchPrune(t *testing.T) {
 	}
 }
 
+func TestRemoteBranchExists_UsesExactHeadRef(t *testing.T) {
+	localDir, _, mainBranch := initTestRepoWithRemote(t)
+	g := NewGit(localDir)
+
+	branch := "polecat/tester/gt-123@mlabcd12"
+	if err := g.CreateBranch(branch); err != nil {
+		t.Fatalf("CreateBranch: %v", err)
+	}
+	if err := g.Checkout(branch); err != nil {
+		t.Fatalf("Checkout: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(localDir, "remote-check.txt"), []byte("test"), 0644); err != nil {
+		t.Fatalf("write: %v", err)
+	}
+	if err := g.Add("remote-check.txt"); err != nil {
+		t.Fatalf("Add: %v", err)
+	}
+	if err := g.Commit("remote branch exists check"); err != nil {
+		t.Fatalf("Commit: %v", err)
+	}
+	push := exec.Command("git", "push", "origin", branch+":"+branch)
+	push.Dir = localDir
+	if err := push.Run(); err != nil {
+		t.Fatalf("push branch: %v", err)
+	}
+	if err := g.Checkout(mainBranch); err != nil {
+		t.Fatalf("Checkout main: %v", err)
+	}
+
+	exists, err := g.RemoteBranchExists("origin", branch)
+	if err != nil {
+		t.Fatalf("RemoteBranchExists(branch): %v", err)
+	}
+	if !exists {
+		t.Fatalf("expected branch %q to exist on remote", branch)
+	}
+
+	exists, err = g.RemoteBranchExists("origin", "refs/heads/"+branch)
+	if err != nil {
+		t.Fatalf("RemoteBranchExists(refs/heads/...): %v", err)
+	}
+	if !exists {
+		t.Fatalf("expected refs/heads/%s to exist on remote", branch)
+	}
+
+	exists, err = g.RemoteBranchExists("origin", "polecat/tester/gt-999@mlmissing")
+	if err != nil {
+		t.Fatalf("RemoteBranchExists(missing): %v", err)
+	}
+	if exists {
+		t.Fatal("expected missing branch to return false")
+	}
+}
+
 // initTestRepoWithSubmodule creates a parent repo with a submodule for testing.
 // Returns parentDir, submoduleRemoteDir (bare).
 func initTestRepoWithSubmodule(t *testing.T) (string, string) {

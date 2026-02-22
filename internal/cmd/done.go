@@ -533,6 +533,12 @@ func runDone(cmd *cobra.Command, args []string) (retErr error) {
 		// Pre-declare push variables for checkpoint goto (gt-aufru)
 		var refspec string
 		var pushErr error
+		var exists bool
+		var verifyErr error
+		var verifiers []remoteBranchChecker
+		var bareGit *git.Git
+		var mayorGit *git.Git
+		pushClient := g
 
 		// Resume: skip push if already completed in a previous run (gt-aufru)
 		if checkpoints[CheckpointPushed] != "" {
@@ -551,7 +557,7 @@ func runDone(cmd *cobra.Command, args []string) (retErr error) {
 		// bypassing the MR/refinery flow (G20 root cause).
 		fmt.Printf("Pushing branch to remote...\n")
 		refspec = branch + ":" + branch
-		pushErr = g.Push("origin", refspec, false)
+		pushErr = pushClient.Push("origin", refspec, false)
 		if pushErr != nil {
 			// Primary push failed — try fallback from the bare repo (GH #1348).
 			// When polecat sessions are reused or worktrees are stale, the worktree's
@@ -561,22 +567,24 @@ func runDone(cmd *cobra.Command, args []string) (retErr error) {
 			rigPath := filepath.Join(townRoot, rigName)
 			bareRepoPath := filepath.Join(rigPath, ".repo.git")
 			if _, statErr := os.Stat(bareRepoPath); statErr == nil {
-				bareGit := git.NewGitWithDir(bareRepoPath, "")
+				bareGit = git.NewGitWithDir(bareRepoPath, "")
 				pushErr = bareGit.Push("origin", refspec, false)
 				if pushErr != nil {
 					style.PrintWarning("bare repo push also failed: %v", pushErr)
 				} else {
+					pushClient = bareGit
 					fmt.Printf("%s Branch pushed via bare repo fallback\n", style.Bold.Render("✓"))
 				}
 			} else {
 				// No bare repo — try mayor/rig as last resort
 				mayorPath := filepath.Join(rigPath, "mayor", "rig")
 				if _, statErr := os.Stat(mayorPath); statErr == nil {
-					mayorGit := git.NewGit(mayorPath)
+					mayorGit = git.NewGit(mayorPath)
 					pushErr = mayorGit.Push("origin", refspec, false)
 					if pushErr != nil {
 						style.PrintWarning("mayor/rig push also failed: %v", pushErr)
 					} else {
+						pushClient = mayorGit
 						fmt.Printf("%s Branch pushed via mayor/rig fallback\n", style.Bold.Render("✓"))
 					}
 				}
@@ -593,26 +601,24 @@ func runDone(cmd *cobra.Command, args []string) (retErr error) {
 		}
 
 		// Verify the branch actually exists on remote (GH #1348).
-		// Push can return exit 0 without actually pushing (e.g., stale refs,
-		// worktree/bare-repo state mismatch). Verify before creating MR bead.
-		if exists, verifyErr := g.RemoteBranchExists("origin", branch); verifyErr != nil {
+		// Push can return exit 0 without immediate remote visibility. Verify
+		// with bounded retries before creating MR bead.
+		verifiers = []remoteBranchChecker{pushClient, g}
+		if bareGit != nil {
+			verifiers = append(verifiers, bareGit)
+		}
+		if mayorGit != nil {
+			verifiers = append(verifiers, mayorGit)
+		}
+		exists, verifyErr = verifyRemoteBranchWithRetry("origin", branch, 4, time.Sleep, verifiers...)
+		if verifyErr != nil {
 			style.PrintWarning("could not verify push: %v (proceeding optimistically)", verifyErr)
 		} else if !exists {
-			// Push "succeeded" but branch not on remote — try bare repo verification
-			// (worktree git may not see the pushed ref)
-			rigPath := filepath.Join(townRoot, rigName)
-			bareRepoPath := filepath.Join(rigPath, ".repo.git")
-			if _, statErr := os.Stat(bareRepoPath); statErr == nil {
-				bareGit := git.NewGitWithDir(bareRepoPath, "")
-				exists, verifyErr = bareGit.RemoteBranchExists("origin", branch)
-			}
-			if verifyErr != nil || !exists {
-				pushFailed = true
-				errMsg := fmt.Sprintf("push appeared to succeed but branch '%s' not found on remote", branch)
-				doneErrors = append(doneErrors, errMsg)
-				style.PrintWarning("%s\nThis may indicate a stale git context. Witness will be notified.", errMsg)
-				goto notifyWitness
-			}
+			pushFailed = true
+			errMsg := fmt.Sprintf("push appeared to succeed but branch '%s' not found on remote", branch)
+			doneErrors = append(doneErrors, errMsg)
+			style.PrintWarning("%s\nThis may indicate a stale git context. Witness will be notified.", errMsg)
+			goto notifyWitness
 		}
 		fmt.Printf("%s Branch pushed to origin\n", style.Bold.Render("✓"))
 
@@ -1024,6 +1030,47 @@ afterDoltMerge:
 	return NewSilentExit(0)
 }
 
+type remoteBranchChecker interface {
+	RemoteBranchExists(remote, branch string) (bool, error)
+}
+
+// verifyRemoteBranchWithRetry checks remote branch visibility across one or more
+// git clients. This handles transient ls-remote lag after push and fallback
+// pushes executed from a different clone path (bare repo or mayor clone).
+func verifyRemoteBranchWithRetry(remote, branch string, attempts int, sleepFn func(time.Duration), checkers ...remoteBranchChecker) (bool, error) {
+	if attempts < 1 {
+		attempts = 1
+	}
+	if sleepFn == nil {
+		sleepFn = time.Sleep
+	}
+
+	var lastErr error
+	for i := 0; i < attempts; i++ {
+		for _, checker := range checkers {
+			if checker == nil {
+				continue
+			}
+			exists, err := checker.RemoteBranchExists(remote, branch)
+			if err != nil {
+				lastErr = err
+				continue
+			}
+			if exists {
+				return true, nil
+			}
+		}
+		if i < attempts-1 {
+			sleepFn(time.Duration(i+1) * time.Second)
+		}
+	}
+
+	if lastErr != nil {
+		return false, lastErr
+	}
+	return false, nil
+}
+
 // setDoneIntentLabel writes a done-intent:<type>:<unix-ts> label on the agent bead
 // EARLY in gt done, before push/MR. This allows the Witness to detect polecats that
 // crashed mid-gt-done: if the session is dead but done-intent exists, the polecat was
@@ -1297,6 +1344,7 @@ func updateAgentStateOnDone(cwd, townRoot, exitType, _ string) { // issueID unus
 		if _, err := bd.Run("agent", "state", agentBeadID, "stuck"); err != nil {
 			fmt.Fprintf(os.Stderr, "Warning: couldn't set agent %s to stuck: %v\n", agentBeadID, err)
 		}
+		// ExitCompleted and ExitDeferred don't set state - observable from tmux
 	}
 
 	// ZFC #10: Self-report cleanup status

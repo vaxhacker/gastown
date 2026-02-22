@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -945,7 +946,7 @@ func TestReadDoneCheckpoints(t *testing.T) {
 			},
 		},
 		{
-			name:   "mixed with done-intent and other labels",
+			name: "mixed with done-intent and other labels",
 			labels: []string{
 				"gt:agent",
 				"done-intent:COMPLETED:1738972800",
@@ -1091,12 +1092,12 @@ func TestCheckpointNilMapSafe(t *testing.T) {
 // convoy merge=direct was not propagated because cross-rig dep resolution failed.
 func TestConvoyInfoFallbackChain(t *testing.T) {
 	tests := []struct {
-		name            string
-		attachmentInfo  *ConvoyInfo // Result from getConvoyInfoFromIssue
-		depInfo         *ConvoyInfo // Result from getConvoyInfoForIssue
-		wantConvoyID    string
-		wantMerge       string
-		wantNil         bool
+		name           string
+		attachmentInfo *ConvoyInfo // Result from getConvoyInfoFromIssue
+		depInfo        *ConvoyInfo // Result from getConvoyInfoForIssue
+		wantConvoyID   string
+		wantMerge      string
+		wantNil        bool
 	}{
 		{
 			name:           "attachment fields provide convoy info",
@@ -1153,4 +1154,96 @@ func TestConvoyInfoFallbackChain(t *testing.T) {
 			}
 		})
 	}
+}
+
+type scriptedRemoteBranchChecker struct {
+	results []remoteBranchResult
+	calls   int
+}
+
+type remoteBranchResult struct {
+	exists bool
+	err    error
+}
+
+func (m *scriptedRemoteBranchChecker) RemoteBranchExists(remote, branch string) (bool, error) {
+	if len(m.results) == 0 {
+		m.calls++
+		return false, nil
+	}
+	idx := m.calls
+	if idx >= len(m.results) {
+		idx = len(m.results) - 1
+	}
+	m.calls++
+	return m.results[idx].exists, m.results[idx].err
+}
+
+func TestVerifyRemoteBranchWithRetry(t *testing.T) {
+	t.Run("eventual visibility succeeds", func(t *testing.T) {
+		primary := &scriptedRemoteBranchChecker{
+			results: []remoteBranchResult{{exists: false}, {exists: false}, {exists: false}},
+		}
+		secondary := &scriptedRemoteBranchChecker{
+			results: []remoteBranchResult{{exists: false}, {exists: false}, {exists: true}},
+		}
+		sleepCalls := 0
+		exists, err := verifyRemoteBranchWithRetry("origin", "polecat/x/gt-123@abc", 4, func(time.Duration) {
+			sleepCalls++
+		}, primary, secondary)
+		if err != nil {
+			t.Fatalf("verifyRemoteBranchWithRetry error: %v", err)
+		}
+		if !exists {
+			t.Fatal("expected branch to become visible")
+		}
+		if sleepCalls != 2 {
+			t.Fatalf("expected 2 sleep calls before success, got %d", sleepCalls)
+		}
+	})
+
+	t.Run("consistently missing returns false without error", func(t *testing.T) {
+		checker := &scriptedRemoteBranchChecker{
+			results: []remoteBranchResult{{exists: false}},
+		}
+		exists, err := verifyRemoteBranchWithRetry("origin", "polecat/x/gt-123@abc", 3, func(time.Duration) {}, checker)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if exists {
+			t.Fatal("expected missing branch to remain false")
+		}
+		if checker.calls != 3 {
+			t.Fatalf("expected 3 attempts, got %d", checker.calls)
+		}
+	})
+
+	t.Run("verification errors propagate as uncertain state", func(t *testing.T) {
+		checker := &scriptedRemoteBranchChecker{
+			results: []remoteBranchResult{{err: errors.New("temporary ls-remote failure")}},
+		}
+		exists, err := verifyRemoteBranchWithRetry("origin", "polecat/x/gt-123@abc", 2, func(time.Duration) {}, checker)
+		if exists {
+			t.Fatal("expected no verified branch on repeated errors")
+		}
+		if err == nil {
+			t.Fatal("expected verification error")
+		}
+	})
+
+	t.Run("zero attempts coerces to one", func(t *testing.T) {
+		checker := &scriptedRemoteBranchChecker{
+			results: []remoteBranchResult{{exists: false}},
+		}
+		exists, err := verifyRemoteBranchWithRetry("origin", "polecat/x/gt-123@abc", 0, nil, checker)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if exists {
+			t.Fatal("expected missing branch")
+		}
+		if checker.calls != 1 {
+			t.Fatalf("expected a single coerced attempt, got %d", checker.calls)
+		}
+	})
 }
