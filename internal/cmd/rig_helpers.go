@@ -59,3 +59,26 @@ func getRig(rigName string) (string, *rig.Rig, error) {
 
 	return townRoot, r, nil
 }
+
+// resolveRigNameOrInfer returns rigName if provided, otherwise infers it from cwd.
+// usageHint is appended to the error when inference fails to provide contextual guidance.
+func resolveRigNameOrInfer(rigName string, usageHint string) (string, error) {
+	if rigName != "" {
+		return rigName, nil
+	}
+
+	townRoot, err := workspace.FindFromCwdOrError()
+	if err != nil {
+		return "", fmt.Errorf("not in a Gas Town workspace: %w", err)
+	}
+
+	inferred, err := inferRigFromCwd(townRoot)
+	if err != nil {
+		if usageHint != "" {
+			return "", fmt.Errorf("could not determine rig: %w\nUsage: %s", err, usageHint)
+		}
+		return "", fmt.Errorf("could not determine rig: %w", err)
+	}
+
+	return inferred, nil
+}

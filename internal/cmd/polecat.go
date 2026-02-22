@@ -72,6 +72,7 @@ all polecats with their states:
   - stuck: Needs assistance
 
 Examples:
+  gt polecat list              # infer rig from cwd
   gt polecat list greenplace
   gt polecat list --all
   gt polecat list greenplace --json`,
@@ -115,8 +116,9 @@ Examples:
 }
 
 var polecatStatusCmd = &cobra.Command{
-	Use:   "status <rig>/<polecat>",
-	Short: "Show detailed status for a polecat",
+	Use:     "status <rig>/<polecat>",
+	Aliases: []string{"show"},
+	Short:   "Show detailed status for a polecat",
 	Long: `Show detailed status for a polecat.
 
 Displays comprehensive information including:
@@ -376,11 +378,16 @@ func runPolecatList(cmd *cobra.Command, args []string) error {
 		}
 		rigs = allRigs
 	} else {
-		// Need a rig name
-		if len(args) < 1 {
-			return fmt.Errorf("rig name required (or use --all)")
+		rigName := ""
+		if len(args) > 0 {
+			rigName = args[0]
 		}
-		_, r, err := getPolecatManager(args[0])
+		rigName, err := resolveRigNameOrInfer(rigName, "gt polecat list [rig]")
+		if err != nil {
+			return fmt.Errorf("rig name required (or use --all): %w", err)
+		}
+
+		_, r, err := getPolecatManager(rigName)
 		if err != nil {
 			return err
 		}

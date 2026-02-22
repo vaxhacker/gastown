@@ -17,9 +17,12 @@ import (
 )
 
 func runMQList(cmd *cobra.Command, args []string) error {
-	rigName := args[0]
+	rigName := ""
+	if len(args) > 0 {
+		rigName = args[0]
+	}
 
-	_, r, _, err := getRefineryManager(rigName)
+	_, r, rigName, err := getRefineryManager(rigName)
 	if err != nil {
 		return err
 	}
@@ -77,10 +80,10 @@ func runMQList(cmd *cobra.Command, args []string) error {
 	// Apply additional filters and calculate scores
 	now := time.Now()
 	type scoredIssue struct {
-		issue          *beads.Issue
-		fields         *beads.MRFields
-		score          float64
-		branchMissing  bool // true if branch doesn't exist in git (when --verify is set)
+		issue           *beads.Issue
+		fields          *beads.MRFields
+		score           float64
+		branchMissing   bool // true if branch doesn't exist in git (when --verify is set)
 		branchVerifyErr bool // true if git check errored (corrupt repo, permission, etc.)
 	}
 	var scored []scoredIssue
@@ -153,8 +156,8 @@ func runMQList(cmd *cobra.Command, args []string) error {
 			// Extend JSON with verification results
 			type verifiedIssue struct {
 				*beads.Issue
-				BranchExists *bool  `json:"branch_exists,omitempty"`
-				VerifyError  bool   `json:"verify_error,omitempty"`
+				BranchExists *bool `json:"branch_exists,omitempty"`
+				VerifyError  bool  `json:"verify_error,omitempty"`
 			}
 			var verified []verifiedIssue
 			for _, s := range scored {

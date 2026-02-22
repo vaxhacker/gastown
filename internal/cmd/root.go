@@ -317,10 +317,20 @@ func buildCommandPath(cmd *cobra.Command) string {
 // unknown subcommands like "gt mol foobar", masking errors.
 func requireSubcommand(cmd *cobra.Command, args []string) error {
 	if len(args) == 0 {
-		return fmt.Errorf("requires a subcommand\n\nRun '%s --help' for usage", buildCommandPath(cmd))
+		// Missing subcommand is usually a UX path, not a hard failure.
+		// Show contextual help and exit successfully.
+		return cmd.Help()
 	}
+
+	cmdPath := buildCommandPath(cmd)
+	suggestions := cmd.SuggestionsFor(args[0])
+	if len(suggestions) > 0 {
+		return fmt.Errorf("unknown command %q for %q\n\nDid you mean %q?\nRun '%s --help' for available commands",
+			args[0], cmdPath, suggestions[0], cmdPath)
+	}
+
 	return fmt.Errorf("unknown command %q for %q\n\nRun '%s --help' for available commands",
-		args[0], buildCommandPath(cmd), buildCommandPath(cmd))
+		args[0], cmdPath, cmdPath)
 }
 
 // checkHelpFlag checks if --help or -h is the first argument and shows help if so.

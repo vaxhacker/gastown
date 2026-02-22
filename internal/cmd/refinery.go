@@ -10,8 +10,8 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/steveyegge/gastown/internal/beads"
 	"github.com/steveyegge/gastown/internal/refinery"
-	"github.com/steveyegge/gastown/internal/session"
 	"github.com/steveyegge/gastown/internal/rig"
+	"github.com/steveyegge/gastown/internal/session"
 	"github.com/steveyegge/gastown/internal/style"
 	"github.com/steveyegge/gastown/internal/tmux"
 	"github.com/steveyegge/gastown/internal/workspace"
@@ -79,8 +79,9 @@ If rig is not specified, infers it from the current directory.`,
 }
 
 var refineryStatusCmd = &cobra.Command{
-	Use:   "status [rig]",
-	Short: "Show refinery status",
+	Use:     "status [rig]",
+	Aliases: []string{"show", "log"},
+	Short:   "Show refinery status",
 	Long: `Show the status of a rig's Refinery.
 
 Displays running state, current work, queue length, and statistics.

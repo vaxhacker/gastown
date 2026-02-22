@@ -33,12 +33,12 @@ var (
 	mqRejectStdin  bool // Read reason from stdin
 
 	// List command flags
-	mqListReady   bool
-	mqListStatus  string
-	mqListWorker  string
-	mqListEpic    string
-	mqListJSON    bool
-	mqListVerify  bool
+	mqListReady  bool
+	mqListStatus string
+	mqListWorker string
+	mqListEpic   string
+	mqListJSON   bool
+	mqListVerify bool
 
 	// Status command flags
 	mqStatusJSON bool
@@ -126,7 +126,7 @@ Examples:
 }
 
 var mqListCmd = &cobra.Command{
-	Use:   "list <rig>",
+	Use:   "list [rig]",
 	Short: "Show the merge queue",
 	Long: `Show the merge queue for a rig.
 
@@ -140,11 +140,12 @@ Output format:
               (waiting on gt-mr-001)
 
 Examples:
+  gt mq list
   gt mq list greenplace
   gt mq list greenplace --ready
   gt mq list greenplace --status=open
   gt mq list greenplace --worker=Nux`,
-	Args: cobra.ExactArgs(1),
+	Args: cobra.MaximumNArgs(1),
 	RunE: runMQList,
 }
 
@@ -164,8 +165,9 @@ Examples:
 }
 
 var mqStatusCmd = &cobra.Command{
-	Use:   "status <id>",
-	Short: "Show detailed merge request status",
+	Use:     "status <id>",
+	Aliases: []string{"show"},
+	Short:   "Show detailed merge request status",
 	Long: `Display detailed information about a merge request.
 
 Shows all MR fields, current status with timestamps, dependencies,

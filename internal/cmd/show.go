@@ -6,8 +6,8 @@ import (
 	"os/exec"
 	"syscall"
 
-	"github.com/steveyegge/gastown/internal/beads"
 	"github.com/spf13/cobra"
+	"github.com/steveyegge/gastown/internal/beads"
 )
 
 func init() {
@@ -49,16 +49,20 @@ func runShow(cmd *cobra.Command, args []string) error {
 
 // execBdShow replaces the current process with 'bd show'.
 func execBdShow(args []string) error {
+	return execBdWithSubcommand("show", args, beads.StripBdBranch(os.Environ()))
+}
+
+// execBdWithSubcommand replaces the current process with `bd <subcommand> ...args`.
+// Callers control env so read-only operations can strip BD_BRANCH when appropriate.
+func execBdWithSubcommand(subcommand string, args []string, env []string) error {
 	bdPath, err := exec.LookPath("bd")
 	if err != nil {
 		return fmt.Errorf("bd not found in PATH: %w", err)
 	}
 
-	// Build args: bd show <all-args>
+	// Build args: bd <subcommand> <all-args>
 	// argv[0] must be the program name for exec
-	fullArgs := append([]string{"bd", "show"}, args...)
+	fullArgs := append([]string{"bd", subcommand}, args...)
 
-	// Replace process with bd show — strip BD_BRANCH for read safety (#1796).
-	// gt show is a read operation; polecat write isolation is not needed.
-	return syscall.Exec(bdPath, fullArgs, beads.StripBdBranch(os.Environ()))
+	return syscall.Exec(bdPath, fullArgs, env)
 }
