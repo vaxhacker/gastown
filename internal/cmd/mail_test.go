@@ -296,3 +296,60 @@ func TestAnnounceMessageParsing(t *testing.T) {
 		})
 	}
 }
+
+func TestValidateMailSendArgs(t *testing.T) {
+	originalSelf := mailSendSelf
+	t.Cleanup(func() {
+		mailSendSelf = originalSelf
+	})
+
+	t.Run("accepts single address", func(t *testing.T) {
+		mailSendSelf = false
+
+		if err := validateMailSendArgs(nil, []string{"gastown/claude"}); err != nil {
+			t.Fatalf("validateMailSendArgs returned unexpected error: %v", err)
+		}
+	})
+
+	t.Run("rejects missing address when not self", func(t *testing.T) {
+		mailSendSelf = false
+
+		err := validateMailSendArgs(nil, nil)
+		if err == nil {
+			t.Fatal("expected error for missing address")
+		}
+		if !strings.Contains(err.Error(), "address required") {
+			t.Fatalf("expected address guidance, got: %v", err)
+		}
+	})
+
+	t.Run("rejects positional subject and body with guidance", func(t *testing.T) {
+		mailSendSelf = false
+
+		err := validateMailSendArgs(nil, []string{"gastown/claude", "Subject here", "Message body"})
+		if err == nil {
+			t.Fatal("expected error for extra positional arguments")
+		}
+		if !strings.Contains(err.Error(), "too many positional arguments") {
+			t.Fatalf("expected too-many-args message, got: %v", err)
+		}
+		if !strings.Contains(err.Error(), `"Subject here" "Message body"`) {
+			t.Fatalf("expected quoted extras in message, got: %v", err)
+		}
+		if !strings.Contains(err.Error(), `-s "Subject here" -m "Message body"`) {
+			t.Fatalf("expected flag usage hint, got: %v", err)
+		}
+	})
+
+	t.Run("rejects positional args with self", func(t *testing.T) {
+		mailSendSelf = true
+
+		err := validateMailSendArgs(nil, []string{"gastown/claude"})
+		if err == nil {
+			t.Fatal("expected error for positional args with --self")
+		}
+		if !strings.Contains(err.Error(), "no positional arguments allowed with --self") {
+			t.Fatalf("expected --self guidance, got: %v", err)
+		}
+	})
+}
