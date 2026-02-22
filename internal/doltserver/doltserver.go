@@ -2402,6 +2402,110 @@ func isDoltRetryableError(err error) bool {
 		strings.Contains(msg, "Unknown database")
 }
 
+// validBranchNameRe matches only safe branch name characters: alphanumeric, hyphen,
+// underscore, dot, and forward slash. This prevents SQL injection via branch names
+// interpolated into Dolt stored procedure calls.
+var validBranchNameRe = regexp.MustCompile(`^[a-zA-Z0-9._/-]+$`)
+
+// validateBranchName returns an error if branchName contains characters that could
+// break out of SQL string literals. Defense-in-depth: PolecatBranchName generates
+// safe names, but callers accept arbitrary strings.
+func validateBranchName(branchName string) error {
+	if branchName == "" {
+		return fmt.Errorf("branch name must not be empty")
+	}
+	if !validBranchNameRe.MatchString(branchName) {
+		return fmt.Errorf("branch name %q contains invalid characters", branchName)
+	}
+	return nil
+}
+
+// PolecatBranchName returns the Dolt branch name for a polecat.
+// Format: polecat-<name>-<unix-timestamp>
+func PolecatBranchName(polecatName string) string {
+	return fmt.Sprintf("polecat-%s-%d", strings.ToLower(polecatName), time.Now().Unix())
+}
+
+// CreatePolecatBranch creates a Dolt branch for a polecat's isolated writes.
+// Each polecat gets its own branch to eliminate optimistic lock contention.
+// Retries with exponential backoff on transient errors (read-only, manifest lock, etc).
+// If read-only errors persist after retries, attempts server recovery (gt-chx92).
+func CreatePolecatBranch(townRoot, rigDB, branchName string) error {
+	if err := validateBranchName(branchName); err != nil {
+		return fmt.Errorf("creating Dolt branch in %s: %w", rigDB, err)
+	}
+	// Always fork from main explicitly. One-arg DOLT_BRANCH() inherits the current
+	// session branch, which can be stale/non-main and produce polecat branches that
+	// miss newer schema tables (e.g., wisps) and data.
+	query := fmt.Sprintf("CALL DOLT_BRANCH('%s', 'main')", branchName)
+
+	if err := doltSQLWithRecovery(townRoot, rigDB, query); err != nil {
+		return fmt.Errorf("creating Dolt branch %s in %s: %w", branchName, rigDB, err)
+	}
+	if err := ensureWispTablesOnBranch(townRoot, rigDB, branchName); err != nil {
+		return fmt.Errorf("ensuring wisp tables on branch %s in %s: %w", branchName, rigDB, err)
+	}
+	return nil
+}
+
+// ensureWispTablesOnBranch hydrates wisp tables on a newly created polecat branch
+// when they are missing from branch HEAD. This closes a compatibility gap where
+// main's working set can contain wisp tables/data that are not present in HEAD,
+// causing formula wisps to be invisible under BD_BRANCH in polecat sessions.
+func ensureWispTablesOnBranch(townRoot, rigDB, branchName string) error {
+	missing, err := branchMissingWispTable(townRoot, rigDB, branchName)
+	if err != nil {
+		return err
+	}
+	if !missing {
+		return nil
+	}
+	return hydrateWispTablesFromMain(townRoot, rigDB, branchName)
+}
+
+func branchMissingWispTable(townRoot, rigDB, branchName string) (bool, error) {
+	escapedBranch := strings.ReplaceAll(branchName, "'", "''")
+	script := fmt.Sprintf(`USE %s;
+CALL DOLT_CHECKOUT('%s');
+SELECT 1 FROM wisps LIMIT 1;
+CALL DOLT_CHECKOUT('main');
+`, rigDB, escapedBranch)
+	if err := doltSQLScript(townRoot, script); err != nil {
+		if strings.Contains(err.Error(), "table not found: wisps") {
+			return true, nil
+		}
+		return false, err
+	}
+	return false, nil
+}
+
+func hydrateWispTablesFromMain(townRoot, rigDB, branchName string) error {
+	escapedBranch := strings.ReplaceAll(branchName, "'", "''")
+	escapedMsg := strings.ReplaceAll("hydrate wisp tables for "+branchName, "'", "''")
+	sourceRevision := strings.ReplaceAll(fmt.Sprintf("%s/main", rigDB), "`", "``")
+	// NOTE: This list must be updated if new wisp-related tables are added.
+	wispTables := []string{
+		"wisps",
+		"wisp_dependencies",
+		"wisp_labels",
+		"wisp_comments",
+		"wisp_events",
+	}
+
+	var b strings.Builder
+	fmt.Fprintf(&b, "USE %s;\n", rigDB)
+	fmt.Fprintf(&b, "CALL DOLT_CHECKOUT('%s');\n", escapedBranch)
+	for _, tbl := range wispTables {
+		fmt.Fprintf(&b, "CREATE TABLE IF NOT EXISTS %s LIKE `%s`.%s;\n", tbl, sourceRevision, tbl)
+		fmt.Fprintf(&b, "INSERT IGNORE INTO %s SELECT * FROM `%s`.%s;\n", tbl, sourceRevision, tbl)
+	}
+	b.WriteString("CALL DOLT_ADD('-A');\n")
+	fmt.Fprintf(&b, "CALL DOLT_COMMIT('--allow-empty', '-m', '%s');\n", escapedMsg)
+	b.WriteString("CALL DOLT_CHECKOUT('main');\n")
+
+	return doltSQLScriptWithRetry(townRoot, b.String())
+}
+
 // CommitServerWorkingSet stages all pending changes and commits them on the current branch via SQL.
 // This flushes the Dolt working set to HEAD so that DOLT_BRANCH (which forks from
 // HEAD, not the working set) will include all recent writes. Critical for the sling
@@ -2412,13 +2516,17 @@ func isDoltRetryableError(err error) bool {
 // polecat A's writes. This is benign because beads are keyed by unique ID, so
 // duplicate data across branches merges cleanly.
 func CommitServerWorkingSet(townRoot, rigDB, message string) error {
-	if err := doltSQLWithRecovery(townRoot, rigDB, "CALL DOLT_ADD('-A')"); err != nil {
-		return fmt.Errorf("staging working set in %s: %w", rigDB, err)
-	}
 	escaped := strings.ReplaceAll(message, "'", "''")
-	query := fmt.Sprintf("CALL DOLT_COMMIT('--allow-empty', '-m', '%s')", escaped)
-	if err := doltSQLWithRecovery(townRoot, rigDB, query); err != nil {
-		return fmt.Errorf("committing working set in %s: %w", rigDB, err)
+	// Keep checkout/add/commit in a single SQL connection. DOLT_CHECKOUT is
+	// connection-scoped; splitting this across separate dolt sql invocations can
+	// stage/commit on the wrong branch under concurrent branch activity.
+	script := fmt.Sprintf(`USE %s;
+CALL DOLT_CHECKOUT('main');
+CALL DOLT_ADD('-A');
+CALL DOLT_COMMIT('--allow-empty', '-m', '%s');
+`, rigDB, escaped)
+	if err := doltSQLScriptWithRetry(townRoot, script); err != nil {
+		return fmt.Errorf("committing working set on main in %s: %w", rigDB, err)
 	}
 	return nil
 }
