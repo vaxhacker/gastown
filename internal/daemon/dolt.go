@@ -24,6 +24,10 @@ const doltCmdTimeout = 15 * time.Second
 // within 30s instead of up to 3 minutes.
 const DefaultDoltHealthCheckInterval = 30 * time.Second
 
+// DefaultDoltAlertCooldown suppresses repeated alerts of the same type within
+// a short window to avoid mail storms during recurring failures.
+const DefaultDoltAlertCooldown = 5 * time.Minute
+
 // DoltServerConfig holds configuration for the Dolt SQL server.
 type DoltServerConfig struct {
 	// Enabled controls whether the daemon manages a Dolt server.
@@ -120,6 +124,12 @@ type DoltServerManager struct {
 	startedAt time.Time
 	lastCheck time.Time
 
+	// Alert suppression state (separate from lifecycle mutex to avoid lock coupling
+	// with asynchronous alert delivery paths).
+	alertMu       sync.Mutex
+	lastAlertSent map[string]time.Time
+	alertCooldown time.Duration
+
 	// Backoff state for restart logic
 	currentDelay    time.Duration // Current backoff delay (grows exponentially)
 	restartTimes    []time.Time   // Timestamps of recent restarts within window
@@ -131,19 +141,19 @@ type DoltServerManager struct {
 	lastIdentityCheck time.Time // Last time we ran the database identity check
 
 	// Test hooks (nil = use real implementations; set only in tests)
-	healthCheckFn      func() error
-	writeProbeCheckFn  func() error
-	identityCheckFn    func() error // nil = use real VerifyServerDataDir
-	startFn            func() error
-	runningFn          func() (int, bool)
-	stopFn             func()
-	sleepFn            func(time.Duration)
-	nowFn              func() time.Time
-	escalateFn         func(int)
-	unhealthyAlertFn   func(error)
-	readOnlyAlertFn    func(error)
-	crashAlertFn       func(int)
-	listDatabasesFn    func() ([]string, error)
+	healthCheckFn     func() error
+	writeProbeCheckFn func() error
+	identityCheckFn   func() error // nil = use real VerifyServerDataDir
+	startFn           func() error
+	runningFn         func() (int, bool)
+	stopFn            func()
+	sleepFn           func(time.Duration)
+	nowFn             func() time.Time
+	escalateFn        func(int)
+	unhealthyAlertFn  func(error)
+	readOnlyAlertFn   func(error)
+	crashAlertFn      func(int)
+	listDatabasesFn   func() ([]string, error)
 }
 
 // NewDoltServerManager creates a new Dolt server manager.
@@ -406,6 +416,7 @@ func (m *DoltServerManager) EnsureRunning() error {
 
 		// Server is healthy — clear any stale unhealthy signal and reset backoff
 		m.clearUnhealthySignal()
+		m.clearAlertSuppression()
 		m.maybeResetBackoff()
 		return nil
 	}
@@ -600,6 +611,9 @@ Action needed: Investigate and fix the root cause, then restart the daemon or th
 // This is for single crash detection — distinct from crash-loop escalation.
 // Runs asynchronously to avoid blocking.
 func (m *DoltServerManager) sendCrashAlert(deadPID int) {
+	if !m.shouldSendAlert("crash") {
+		return
+	}
 	if m.crashAlertFn != nil {
 		m.crashAlertFn(deadPID)
 		return
@@ -629,6 +643,9 @@ Check the log file for crash details. If crashes recur, the daemon will escalate
 // sendUnhealthyAlert sends a mail to the mayor when the Dolt server fails health checks.
 // The server is running but not responding to queries. Runs asynchronously.
 func (m *DoltServerManager) sendUnhealthyAlert(healthErr error) {
+	if !m.shouldSendAlert("unhealthy") {
+		return
+	}
 	if m.unhealthyAlertFn != nil {
 		m.unhealthyAlertFn(healthErr)
 		return
@@ -1125,6 +1142,9 @@ func isReadOnlyError(msg string) bool {
 // This is distinct from unhealthy alerts — the server is running and responding
 // to reads, but cannot accept writes. Runs asynchronously.
 func (m *DoltServerManager) sendReadOnlyAlert(readOnlyErr error) {
+	if !m.shouldSendAlert("read_only") {
+		return
+	}
 	if m.readOnlyAlertFn != nil {
 		m.readOnlyAlertFn(readOnlyErr)
 		return
@@ -1174,6 +1194,51 @@ func (m *DoltServerManager) getDoltVersion() (string, error) {
 		return parts[2], nil
 	}
 	return line, nil
+}
+
+// alertCooldownDuration returns the configured alert suppression cooldown.
+func (m *DoltServerManager) alertCooldownDuration() time.Duration {
+	if m.alertCooldown > 0 {
+		return m.alertCooldown
+	}
+	return DefaultDoltAlertCooldown
+}
+
+// shouldSendAlert returns true when an alert type is outside the suppression
+// cooldown window and should be emitted.
+func (m *DoltServerManager) shouldSendAlert(alertType string) bool {
+	now := m.now()
+	cooldown := m.alertCooldownDuration()
+
+	m.alertMu.Lock()
+	defer m.alertMu.Unlock()
+
+	if m.lastAlertSent == nil {
+		m.lastAlertSent = make(map[string]time.Time)
+	}
+
+	if last, ok := m.lastAlertSent[alertType]; ok {
+		since := now.Sub(last)
+		if since < cooldown {
+			m.logger("Suppressing duplicate Dolt %s alert (%v since last, cooldown %v)",
+				alertType, since.Round(time.Second), cooldown)
+			return false
+		}
+	}
+
+	m.lastAlertSent[alertType] = now
+	return true
+}
+
+// clearAlertSuppression resets alert suppression state after a healthy check so
+// future incidents are reported immediately.
+func (m *DoltServerManager) clearAlertSuppression() {
+	m.alertMu.Lock()
+	defer m.alertMu.Unlock()
+	if len(m.lastAlertSent) == 0 {
+		return
+	}
+	m.lastAlertSent = nil
 }
 
 // listDatabases returns the list of databases in the Dolt server.

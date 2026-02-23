@@ -16,6 +16,9 @@ no embedded mode, no SQLite, and no JSONL.
 The `gt daemon` manages the server lifecycle (auto-start, health checks
 every 30s, crash restart with exponential backoff).
 
+For alarm semantics (crash/unhealthy/read-only alerts, suppression behavior,
+and on-call response), see `docs/concepts/dolt-alarms.md`.
+
 ## Server Architecture
 
 ```
