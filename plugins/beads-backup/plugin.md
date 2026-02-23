@@ -105,15 +105,20 @@ done
 )
 ```
 
-## Step 6: Prune old backups (keep most recent 48)
+## Step 6: Prune old backups (retain at least 48 hours)
 
 ```bash
-KEEP_COUNT=48
+RETENTION_HOURS=48
+NOW_EPOCH="$(date -u +%s)"
 
-find "$BACKUP_ROOT" -mindepth 1 -maxdepth 1 -type d \
-  | sort -r \
-  | awk "NR>$KEEP_COUNT" \
-  | xargs -r rm -rf
+find "$BACKUP_ROOT" -mindepth 1 -maxdepth 1 -type d | while read -r SNAP_DIR; do
+  SNAP_NAME="$(basename "$SNAP_DIR")"
+  SNAP_EPOCH="$(date -u -d "${SNAP_NAME:0:8} ${SNAP_NAME:9:2}:${SNAP_NAME:11:2}:${SNAP_NAME:13:2}" +%s 2>/dev/null || true)"
+
+  if [ -n "$SNAP_EPOCH" ] && [ $((NOW_EPOCH - SNAP_EPOCH)) -gt $((RETENTION_HOURS * 3600)) ]; then
+    rm -rf "$SNAP_DIR"
+  fi
+done
 ```
 
 ## Record Result
