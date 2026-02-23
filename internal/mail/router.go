@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -887,6 +888,11 @@ func (r *Router) validateRecipient(identity string) error {
 		return nil
 	}
 
+	// Town-level roles are always routable.
+	if identity == "mayor/" || identity == "deacon/" {
+		return nil
+	}
+
 	// Query agents from town-level beads
 	agents := r.queryAgents("")
 
@@ -920,7 +926,47 @@ func (r *Router) validateRecipient(identity string) error {
 		}
 	}
 
+	// Fallback to workspace structure when agent beads are unavailable.
+	if r.validateRecipientFromWorkspace(identity) {
+		return nil
+	}
+
 	return fmt.Errorf("no agent found")
+}
+
+// validateRecipientFromWorkspace validates common agent addresses by checking
+// town/rig directory structure. This keeps mail routing functional when agent
+// beads are unavailable or stale.
+func (r *Router) validateRecipientFromWorkspace(identity string) bool {
+	if r.townRoot == "" {
+		return false
+	}
+
+	parts := strings.Split(identity, "/")
+	if len(parts) != 2 {
+		return false
+	}
+	rig, roleOrName := parts[0], parts[1]
+	if rig == "" || roleOrName == "" {
+		return false
+	}
+
+	switch roleOrName {
+	case "witness", "refinery":
+		return dirExists(filepath.Join(r.townRoot, rig, roleOrName))
+	case "mayor", "deacon":
+		// Town-level roles must not be addressed as rig/<role>.
+		return false
+	default:
+		// Canonical rig/name maps to either crew or polecat worktree.
+		return dirExists(filepath.Join(r.townRoot, rig, "crew", roleOrName)) ||
+			dirExists(filepath.Join(r.townRoot, rig, "polecats", roleOrName))
+	}
+}
+
+func dirExists(path string) bool {
+	info, err := os.Stat(path)
+	return err == nil && info.IsDir()
 }
 
 // sendToSingle sends a message to a single recipient.
@@ -1606,4 +1652,3 @@ func AddressToSessionIDs(address string) []string {
 		session.PolecatSessionName(rigPrefix, target), // <prefix>-name
 	}
 }
-

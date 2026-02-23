@@ -1080,6 +1080,53 @@ func TestValidateRecipient(t *testing.T) {
 	}
 }
 
+func TestValidateRecipientFromWorkspaceFallback(t *testing.T) {
+	townRoot := t.TempDir()
+
+	// Minimal workspace layout for fallback validation.
+	mustMkdirAll := func(path string) {
+		t.Helper()
+		if err := os.MkdirAll(path, 0755); err != nil {
+			t.Fatalf("creating %s: %v", path, err)
+		}
+	}
+	mustMkdirAll(filepath.Join(townRoot, "gastown", "witness"))
+	mustMkdirAll(filepath.Join(townRoot, "gastown", "refinery"))
+	mustMkdirAll(filepath.Join(townRoot, "gastown", "polecats", "slit"))
+	mustMkdirAll(filepath.Join(townRoot, "gastown", "crew", "max"))
+
+	r := NewRouterWithTownRoot(townRoot, townRoot)
+
+	tests := []struct {
+		name     string
+		identity string
+		wantErr  bool
+	}{
+		{"town mayor", "mayor/", false},
+		{"town deacon", "deacon/", false},
+		{"rig witness", "gastown/witness", false},
+		{"rig refinery", "gastown/refinery", false},
+		{"polecat by canonical name", "gastown/slit", false},
+		{"crew by canonical name", "gastown/max", false},
+		{"misrouted town role", "gastown/mayor", true},
+		{"missing named agent", "gastown/nonexistent", true},
+		{"unknown rig singleton", "wrongrig/witness", true},
+		{"bare name", "ruby", true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := r.validateRecipient(tt.identity)
+			if tt.wantErr && err == nil {
+				t.Fatalf("validateRecipient(%q) expected error, got nil", tt.identity)
+			}
+			if !tt.wantErr && err != nil {
+				t.Fatalf("validateRecipient(%q) unexpected error: %v", tt.identity, err)
+			}
+		})
+	}
+}
+
 func setupTestRegistryForAddressTest(t *testing.T) {
 	t.Helper()
 	reg := session.NewPrefixRegistry()
