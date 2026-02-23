@@ -28,6 +28,7 @@ These roles manage the Gas Town system itself:
 |------|-------------|-----------|
 | **Mayor** | Global coordinator at mayor/ | Singleton, persistent |
 | **Deacon** | Background supervisor daemon ([watchdog chain](design/watchdog-chain.md)) | Singleton, persistent |
+| **Librarian** | Town-level docs and knowledge operations specialist | Singleton, persistent |
 | **Witness** | Per-rig polecat lifecycle manager | One per rig, persistent |
 | **Refinery** | Per-rig merge queue processor | One per rig, persistent |
 
