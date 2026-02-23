@@ -394,6 +394,10 @@ Understanding this hierarchy is essential for proper configuration.
 | **Crew** | `~/gt/<rig>/crew/<name>/rig/` | Persistent human workspace clone |
 | **Polecat** | `~/gt/<rig>/polecats/<name>/rig/` | Polecat worktree (ephemeral sandbox) |
 
+Enforcer operator path (incident mode): `gt enforcer start|status|restart|stop`.
+See `docs/concepts/enforcer-operator.md` for trigger criteria, authority boundaries,
+and handback rules.
+
 Note: The per-rig `<rig>/mayor/rig/` directory is NOT a working directory—it's
 a git clone that holds the canonical `.beads/` database for that rig.
 
