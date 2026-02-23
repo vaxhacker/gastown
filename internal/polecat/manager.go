@@ -91,6 +91,16 @@ func isDoltConfigError(err error) bool {
 		strings.Contains(msg, "configure custom types")
 }
 
+// isMissingAgentLabelError returns true if the error indicates an agent bead
+// exists but is missing the required gt:agent label. This is a non-transient
+// error — retrying bd agent state won't add the label. See gt-kr0.
+func isMissingAgentLabelError(err error) bool {
+	if err == nil {
+		return false
+	}
+	return strings.Contains(err.Error(), "missing gt:agent label")
+}
+
 // Common errors
 var (
 	ErrPolecatExists      = errors.New("polecat already exists")
@@ -311,7 +321,8 @@ func (m *Manager) createAgentBeadWithRetry(agentID string, fields *beads.AgentFi
 // rather than fail — e.g., in StartSession where the tmux session is already
 // running and failing hard would orphan it. Agent state is a monitoring
 // concern, not a correctness requirement.
-// Fails fast on configuration/initialization errors (gt-2ra).
+// Fails fast on configuration/initialization errors (gt-2ra) and on missing
+// gt:agent label errors (gt-kr0) — both are non-transient.
 func (m *Manager) SetAgentStateWithRetry(name string, state string) error {
 	var lastErr error
 	for attempt := 1; attempt <= doltMaxRetries; attempt++ {
@@ -323,6 +334,12 @@ func (m *Manager) SetAgentStateWithRetry(name string, state string) error {
 		// Fail fast on config/init errors — retrying won't help (gt-2ra)
 		if isDoltConfigError(err) {
 			return fmt.Errorf("setting agent state failed (DB not initialized — not retrying): %w", err)
+		}
+		// Fail fast on missing gt:agent label — retrying the same bd agent state
+		// call won't add the label. The agent bead exists but was created without
+		// the required label (race in auto-create path). See gt-kr0.
+		if isMissingAgentLabelError(err) {
+			return fmt.Errorf("setting agent state failed (agent bead missing gt:agent label — not retrying): %w", err)
 		}
 		if attempt < doltMaxRetries {
 			backoff := doltBackoff(attempt)
