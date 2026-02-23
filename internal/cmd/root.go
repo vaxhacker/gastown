@@ -53,6 +53,7 @@ var beadsExemptCommands = map[string]bool{
 	"hook":          true,
 	"prime":         true,
 	"nudge":         true,
+	"alarm":         true, // Alarms use local runtime state; no beads dependency
 	"wall":          true,
 	"seance":        true,
 	"doctor":        true,

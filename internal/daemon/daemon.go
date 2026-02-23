@@ -17,6 +17,7 @@ import (
 
 	"github.com/gofrs/flock"
 	beadsdk "github.com/steveyegge/beads"
+	"github.com/steveyegge/gastown/internal/alarm"
 	"github.com/steveyegge/gastown/internal/beads"
 	"github.com/steveyegge/gastown/internal/boot"
 	"github.com/steveyegge/gastown/internal/config"
@@ -486,7 +487,10 @@ func (d *Daemon) heartbeat(state *State) {
 	// branches persist indefinitely. This cleans them up periodically.
 	d.pruneStaleBranches()
 
-	// 14. Dispatch scheduled work (capacity-controlled polecat dispatch).
+	// 14. Fire due alarms (scheduled nudge reminders).
+	alarm.FireDue(d.config.TownRoot, d.gtPath, d.logger.Printf)
+
+	// 15. Dispatch scheduled work (capacity-controlled polecat dispatch).
 	// Shells out to `gt scheduler run` to avoid circular import between daemon and cmd.
 	d.dispatchQueuedWork()
 
@@ -1102,7 +1106,6 @@ func (d *Daemon) isRigOperational(rigName string) (bool, string) {
 
 	return true, ""
 }
-
 
 // processLifecycleRequests checks for and processes lifecycle requests.
 func (d *Daemon) processLifecycleRequests() {
