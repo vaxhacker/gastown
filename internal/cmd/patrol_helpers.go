@@ -8,7 +8,9 @@ import (
 
 	"github.com/steveyegge/gastown/internal/beads"
 	"github.com/steveyegge/gastown/internal/cli"
+	"github.com/steveyegge/gastown/internal/doltserver"
 	"github.com/steveyegge/gastown/internal/style"
+	"github.com/steveyegge/gastown/internal/workspace"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 )
@@ -178,22 +180,25 @@ func autoSpawnPatrol(cfg PatrolConfig) (string, error) {
 	for _, v := range cfg.ExtraVars {
 		spawnArgs = append(spawnArgs, "--var", v)
 	}
-	cmdSpawn := BdCmd(spawnArgs...).
-		WithAutoCommit().
-		Dir(cfg.BeadsDir).
-		Build()
-	var stdoutSpawn, stderrSpawn bytes.Buffer
-	cmdSpawn.Stdout = &stdoutSpawn
-	cmdSpawn.Stderr = &stderrSpawn
 
-	if err := cmdSpawn.Run(); err != nil {
-		return "", fmt.Errorf("failed to create patrol wisp: %s", stderrSpawn.String())
+	spawnOutput, spawnStderr, spawnErr := runPatrolSpawn(cfg.BeadsDir, spawnArgs)
+	if spawnErr != nil && shouldRepairWispTables(spawnStderr) {
+		if err := repairPatrolWispTables(cfg.BeadsDir); err == nil {
+			// Retry once after schema repair.
+			spawnOutput, spawnStderr, spawnErr = runPatrolSpawn(cfg.BeadsDir, spawnArgs)
+		}
+	}
+	if spawnErr != nil {
+		msg := strings.TrimSpace(spawnStderr)
+		if msg == "" {
+			msg = spawnErr.Error()
+		}
+		return "", fmt.Errorf("failed to create patrol wisp: %s", msg)
 	}
 
 	// Parse the created molecule ID from output
 	// Format: "Root issue: <rig>-wisp-<hash>" where rig prefix varies
 	var patrolID string
-	spawnOutput := stdoutSpawn.String()
 	for _, line := range strings.Split(spawnOutput, "\n") {
 		line = strings.TrimSpace(line)
 		if strings.HasPrefix(line, "Root issue:") {
@@ -229,6 +234,38 @@ func autoSpawnPatrol(cfg PatrolConfig) (string, error) {
 	}
 
 	return patrolID, nil
+}
+
+func runPatrolSpawn(beadsDir string, spawnArgs []string) (stdout string, stderr string, err error) {
+	cmdSpawn := BdCmd(spawnArgs...).
+		WithAutoCommit().
+		Dir(beadsDir).
+		Build()
+	var stdoutSpawn, stderrSpawn bytes.Buffer
+	cmdSpawn.Stdout = &stdoutSpawn
+	cmdSpawn.Stderr = &stderrSpawn
+	err = cmdSpawn.Run()
+	return stdoutSpawn.String(), stderrSpawn.String(), err
+}
+
+func shouldRepairWispTables(stderr string) bool {
+	msg := strings.ToLower(stderr)
+	return strings.Contains(msg, "table not found: wisps") ||
+		strings.Contains(msg, ".wisps' doesn't exist") ||
+		strings.Contains(msg, "table `wisps` doesn't exist") ||
+		strings.Contains(msg, "table 'wisps' doesn't exist")
+}
+
+func repairPatrolWispTables(beadsDir string) error {
+	townRoot, err := workspace.Find(beadsDir)
+	if err != nil {
+		return fmt.Errorf("finding workspace: %w", err)
+	}
+	if townRoot == "" {
+		return fmt.Errorf("finding workspace: not in a Gas Town workspace")
+	}
+	_, err = doltserver.MigrateAgentBeadsToWisps(townRoot, beadsDir, false)
+	return err
 }
 
 // outputPatrolContext is the main function that handles patrol display logic.
