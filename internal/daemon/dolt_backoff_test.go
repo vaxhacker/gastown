@@ -318,11 +318,11 @@ func TestStartLocked_SkipsIfAlreadyRunning(t *testing.T) {
 	var logMessages []string
 	m := &DoltServerManager{
 		config: &DoltServerConfig{
-			Enabled:  true,
-			Port:     13307,
-			Host:     "127.0.0.1",
-			DataDir:  filepath.Join(tmpDir, "dolt"),
-			LogFile:  filepath.Join(daemonDir, "dolt-server.log"),
+			Enabled: true,
+			Port:    13307,
+			Host:    "127.0.0.1",
+			DataDir: filepath.Join(tmpDir, "dolt"),
+			LogFile: filepath.Join(daemonDir, "dolt-server.log"),
 		},
 		townRoot: tmpDir,
 		logger: func(format string, v ...interface{}) {
@@ -525,7 +525,7 @@ func newTestManager(t *testing.T) *DoltServerManager {
 			RestartWindow:        10 * time.Minute,
 			HealthyResetInterval: 50 * time.Millisecond,
 		},
-		townRoot:      tmpDir,
+		townRoot:         tmpDir,
 		logger:           func(format string, v ...interface{}) { t.Logf(format, v...) },
 		runningFn:        func() (int, bool) { return 0, false },
 		healthCheckFn:    func() error { return nil },
@@ -1129,5 +1129,135 @@ func TestEnsureRunning_HealthyAfterReadOnlyRecovery(t *testing.T) {
 	// Unhealthy signal should be cleared
 	if IsDoltUnhealthy(m.townRoot) {
 		t.Error("expected DOLT_UNHEALTHY signal to be cleared after recovery")
+	}
+}
+
+// TestEnsureRunning_ReadOnlyAlertSuppressedWithinCooldown verifies duplicate
+// read-only alerts are suppressed during the cooldown window, then re-emitted
+// after cooldown expires.
+func TestEnsureRunning_ReadOnlyAlertSuppressedWithinCooldown(t *testing.T) {
+	var running atomic.Bool
+	var readOnlyAlerts atomic.Int32
+	var clockOffset atomic.Int64
+	baseTime := time.Now()
+
+	running.Store(true)
+
+	m := newTestManager(t)
+	m.alertCooldown = 5 * time.Minute
+	m.nowFn = func() time.Time {
+		return baseTime.Add(time.Duration(clockOffset.Load()))
+	}
+	m.runningFn = func() (int, bool) {
+		if running.Load() {
+			return 1234, true
+		}
+		return 0, false
+	}
+	m.healthCheckFn = func() error { return nil }
+	m.writeProbeCheckFn = func() error {
+		return fmt.Errorf("dolt server is in read-only mode: database is read only")
+	}
+	m.stopFn = func() { running.Store(false) }
+	m.startFn = func() error {
+		running.Store(true)
+		return nil
+	}
+	m.readOnlyAlertFn = func(err error) {
+		readOnlyAlerts.Add(1)
+	}
+	m.sleepFn = func(d time.Duration) {}
+
+	// First incident -> alert sent
+	if err := m.EnsureRunning(); err != nil {
+		t.Fatalf("phase 1: %v", err)
+	}
+
+	// Second incident within cooldown -> suppressed
+	clockOffset.Store(int64(1 * time.Minute))
+	if err := m.EnsureRunning(); err != nil {
+		t.Fatalf("phase 2: %v", err)
+	}
+
+	if got := readOnlyAlerts.Load(); got != 1 {
+		t.Fatalf("expected 1 alert within cooldown, got %d", got)
+	}
+
+	// Third incident after cooldown -> alert sent again
+	clockOffset.Store(int64(6 * time.Minute))
+	if err := m.EnsureRunning(); err != nil {
+		t.Fatalf("phase 3: %v", err)
+	}
+
+	if got := readOnlyAlerts.Load(); got != 2 {
+		t.Fatalf("expected 2 alerts after cooldown expiry, got %d", got)
+	}
+}
+
+// TestEnsureRunning_HealthyClearsAlertSuppression verifies a healthy cycle
+// clears suppression state so a new incident alerts immediately.
+func TestEnsureRunning_HealthyClearsAlertSuppression(t *testing.T) {
+	var running atomic.Bool
+	var readOnly atomic.Bool
+	var readOnlyAlerts atomic.Int32
+	var clockOffset atomic.Int64
+	baseTime := time.Now()
+
+	running.Store(true)
+	readOnly.Store(true)
+
+	m := newTestManager(t)
+	m.alertCooldown = 5 * time.Minute
+	m.nowFn = func() time.Time {
+		return baseTime.Add(time.Duration(clockOffset.Load()))
+	}
+	m.runningFn = func() (int, bool) {
+		if running.Load() {
+			return 1234, true
+		}
+		return 0, false
+	}
+	m.healthCheckFn = func() error { return nil }
+	m.writeProbeCheckFn = func() error {
+		if readOnly.Load() {
+			return fmt.Errorf("dolt server is in read-only mode")
+		}
+		return nil
+	}
+	m.stopFn = func() { running.Store(false) }
+	m.startFn = func() error {
+		running.Store(true)
+		readOnly.Store(false)
+		return nil
+	}
+	m.readOnlyAlertFn = func(err error) {
+		readOnlyAlerts.Add(1)
+	}
+	m.sleepFn = func(d time.Duration) {}
+
+	// Incident 1: read-only -> alert sent
+	if err := m.EnsureRunning(); err != nil {
+		t.Fatalf("phase 1: %v", err)
+	}
+	if got := readOnlyAlerts.Load(); got != 1 {
+		t.Fatalf("expected first alert, got %d", got)
+	}
+
+	// Healthy cycle clears suppression state
+	clockOffset.Store(int64(1 * time.Minute))
+	if err := m.EnsureRunning(); err != nil {
+		t.Fatalf("phase 2: %v", err)
+	}
+
+	// Incident 2 occurs within cooldown window, but should alert because
+	// suppression was reset by healthy cycle.
+	readOnly.Store(true)
+	clockOffset.Store(int64(2 * time.Minute))
+	if err := m.EnsureRunning(); err != nil {
+		t.Fatalf("phase 3: %v", err)
+	}
+
+	if got := readOnlyAlerts.Load(); got != 2 {
+		t.Fatalf("expected second alert after healthy reset, got %d", got)
 	}
 }
