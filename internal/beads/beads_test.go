@@ -1275,6 +1275,48 @@ func TestIsAgentSessionBead(t *testing.T) {
 	}
 }
 
+func TestFilterAgentSessionWisps(t *testing.T) {
+	issues := []*Issue{
+		{ID: "gt-gastown-polecat-max", Ephemeral: true}, // agent session wisp
+		{ID: "gt-abc123", Ephemeral: true},              // non-agent wisp
+		{ID: "gt-gastown-crew-jo", Ephemeral: false},    // persistent agent bead (keep)
+		{ID: "gt-work-1", Ephemeral: false},             // regular work bead
+	}
+
+	t.Run("default filters ephemeral agent session wisps", func(t *testing.T) {
+		filtered := filterAgentSessionWisps(issues, ListOptions{})
+		if len(filtered) != 3 {
+			t.Fatalf("len(filtered) = %d, want 3", len(filtered))
+		}
+		for _, issue := range filtered {
+			if issue.ID == "gt-gastown-polecat-max" {
+				t.Fatalf("unexpected agent session wisp in filtered results: %s", issue.ID)
+			}
+		}
+	})
+
+	t.Run("include flag keeps agent session wisps", func(t *testing.T) {
+		filtered := filterAgentSessionWisps(issues, ListOptions{IncludeAgentSessionWisps: true})
+		if len(filtered) != len(issues) {
+			t.Fatalf("len(filtered) = %d, want %d", len(filtered), len(issues))
+		}
+	})
+
+	t.Run("agent label query keeps agent session wisps", func(t *testing.T) {
+		filtered := filterAgentSessionWisps(issues, ListOptions{Label: "gt:agent"})
+		if len(filtered) != len(issues) {
+			t.Fatalf("len(filtered) = %d, want %d", len(filtered), len(issues))
+		}
+	})
+
+	t.Run("agent type query keeps agent session wisps", func(t *testing.T) {
+		filtered := filterAgentSessionWisps(issues, ListOptions{Type: "agent"})
+		if len(filtered) != len(issues) {
+			t.Fatalf("len(filtered) = %d, want %d", len(filtered), len(issues))
+		}
+	})
+}
+
 // TestParseRoleConfig tests parsing role configuration from descriptions.
 func TestParseRoleConfig(t *testing.T) {
 	tests := []struct {
