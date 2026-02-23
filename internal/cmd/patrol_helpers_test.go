@@ -298,8 +298,8 @@ func TestBuildRefineryPatrolVars_BoolFormat(t *testing.T) {
 	trueVal := true
 	falseVal2 := false
 	mq := &config.MergeQueueConfig{
-		Enabled:                         true,
-		IntegrationBranchAutoLand:       &trueVal,
+		Enabled:                          true,
+		IntegrationBranchAutoLand:        &trueVal,
 		IntegrationBranchRefineryEnabled: &trueVal,
 		RunTests:                         &trueVal,
 		SetupCommand:                     "npm ci",
@@ -412,6 +412,39 @@ func splitFirstEquals(s string) []string {
 		return []string{s}
 	}
 	return []string{s[:idx], s[idx+1:]}
+}
+
+func TestShouldRepairWispTables(t *testing.T) {
+	cases := []struct {
+		name     string
+		stderr   string
+		expected bool
+	}{
+		{
+			name:     "mysql missing wisps table",
+			stderr:   "Error 1146 (HY000): table not found: wisps",
+			expected: true,
+		},
+		{
+			name:     "mysql quoted wisps table",
+			stderr:   "Error 1146: Table 'cmtestsuite.wisps' doesn't exist",
+			expected: true,
+		},
+		{
+			name:     "generic error",
+			stderr:   "permission denied",
+			expected: false,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := shouldRepairWispTables(tc.stderr)
+			if got != tc.expected {
+				t.Fatalf("shouldRepairWispTables(%q) = %v, want %v", tc.stderr, got, tc.expected)
+			}
+		})
+	}
 }
 
 // --- Patrol discovery tests (findActivePatrol) ---
