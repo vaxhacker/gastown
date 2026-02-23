@@ -1591,3 +1591,94 @@ esac
 		}
 	}
 }
+
+func TestIsMissingAgentLabelError(t *testing.T) {
+	if isMissingAgentLabelError(nil) {
+		t.Fatal("nil error should not match missing-label detector")
+	}
+	if !isMissingAgentLabelError(fmt.Errorf("gt-test is not an agent bead (missing gt:agent label)")) {
+		t.Fatal("expected missing-label detector to match canonical error text")
+	}
+	if !isMissingAgentLabelError(fmt.Errorf("UPDATING AGENT STATE: MISSING GT:AGENT LABEL")) {
+		t.Fatal("expected missing-label detector to be case-insensitive")
+	}
+	if isMissingAgentLabelError(fmt.Errorf("database not initialized")) {
+		t.Fatal("non-label error should not match missing-label detector")
+	}
+}
+
+func TestSetAgentStateWithRetryRemediatesMissingAgentLabel(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("shell-script mock bd test is unix-only")
+	}
+
+	root := t.TempDir()
+	r := &rig.Rig{
+		Name: "testrig",
+		Path: root,
+	}
+	m := NewManager(r, git.NewGit(root), nil)
+
+	binDir := t.TempDir()
+	stateFile := filepath.Join(binDir, "state-called")
+	logFile := filepath.Join(binDir, "remediation.log")
+	script := fmt.Sprintf(`#!/bin/sh
+state_file=%q
+log_file=%q
+cmd=""
+sub=""
+for arg in "$@"; do
+  case "$arg" in
+    --*) continue ;;
+    *)
+      if [ -z "$cmd" ]; then
+        cmd="$arg"
+        continue
+      fi
+      if [ -z "$sub" ]; then
+        sub="$arg"
+        break
+      fi
+      ;;
+  esac
+done
+
+if [ "$cmd" = "agent" ] && [ "$sub" = "state" ]; then
+  if [ ! -f "$state_file" ]; then
+    touch "$state_file"
+    echo "gt-testrig-polecat-Test is not an agent bead (missing gt:agent label)" >&2
+    exit 1
+  fi
+  exit 0
+fi
+
+if [ "$cmd" = "update" ]; then
+  for arg in "$@"; do
+    if [ "$arg" = "--add-label=gt:agent" ]; then
+      echo "remediated" >> "$log_file"
+      exit 0
+    fi
+  done
+  echo "expected --add-label=gt:agent" >&2
+  exit 1
+fi
+
+exit 0
+`, stateFile, logFile)
+	if err := os.WriteFile(filepath.Join(binDir, "bd"), []byte(script), 0755); err != nil {
+		t.Fatalf("write mock bd: %v", err)
+	}
+	t.Setenv("PATH", binDir+string(os.PathListSeparator)+os.Getenv("PATH"))
+
+	if err := m.SetAgentStateWithRetry("Test", "working"); err != nil {
+		t.Fatalf("SetAgentStateWithRetry should remediate and succeed, got: %v", err)
+	}
+
+	logData, err := os.ReadFile(logFile)
+	if err != nil {
+		t.Fatalf("expected remediation log file, got read error: %v", err)
+	}
+	if !strings.Contains(string(logData), "remediated") {
+		t.Fatalf("expected remediation marker in log, got %q", string(logData))
+	}
+}
