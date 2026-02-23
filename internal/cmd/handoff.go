@@ -719,8 +719,10 @@ func buildRestartCommand(sessionName string) (string, error) {
 	// Fall back to tmux session environment if process env doesn't have it, but
 	// only for self-handoff. Looking up arbitrary session env makes command
 	// resolution depend on ambient tmux state and can override role_agents.
-	currentAgent := os.Getenv("GT_AGENT")
-	if currentAgent == "" && tmux.IsInsideTmux() && tmux.CurrentSessionName() == sessionName {
+	// If GT_AGENT is explicitly set to empty, treat that as an intentional clear
+	// and do not fall back to tmux session env.
+	currentAgent, hasGTAgentEnv := os.LookupEnv("GT_AGENT")
+	if currentAgent == "" && !hasGTAgentEnv && tmux.IsInsideTmux() && tmux.CurrentSessionName() == sessionName {
 		t := tmux.NewTmux()
 		if val, err := t.GetEnvironment(sessionName, "GT_AGENT"); err == nil && val != "" {
 			currentAgent = val
