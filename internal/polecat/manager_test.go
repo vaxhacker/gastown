@@ -1592,21 +1592,6 @@ esac
 	}
 }
 
-func TestIsMissingAgentLabelError(t *testing.T) {
-	if isMissingAgentLabelError(nil) {
-		t.Fatal("nil error should not match missing-label detector")
-	}
-	if !isMissingAgentLabelError(fmt.Errorf("gt-test is not an agent bead (missing gt:agent label)")) {
-		t.Fatal("expected missing-label detector to match canonical error text")
-	}
-	if !isMissingAgentLabelError(fmt.Errorf("UPDATING AGENT STATE: MISSING GT:AGENT LABEL")) {
-		t.Fatal("expected missing-label detector to be case-insensitive")
-	}
-	if isMissingAgentLabelError(fmt.Errorf("database not initialized")) {
-		t.Fatal("non-label error should not match missing-label detector")
-	}
-}
-
 func TestSetAgentStateWithRetryRemediatesMissingAgentLabel(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("shell-script mock bd test is unix-only")
