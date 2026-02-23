@@ -28,12 +28,12 @@ type RoleInfo struct {
 	Home          string `json:"home"`
 	Rig           string `json:"rig,omitempty"`
 	Polecat       string `json:"polecat,omitempty"`
-	EnvRole       string `json:"env_role,omitempty"`    // Value of GT_ROLE if set
-	CwdRole       Role   `json:"cwd_role,omitempty"`    // Role detected from cwd
-	Mismatch      bool   `json:"mismatch,omitempty"`    // True if env != cwd detection
+	EnvRole       string `json:"env_role,omitempty"`       // Value of GT_ROLE if set
+	CwdRole       Role   `json:"cwd_role,omitempty"`       // Role detected from cwd
+	Mismatch      bool   `json:"mismatch,omitempty"`       // True if env != cwd detection
 	EnvIncomplete bool   `json:"env_incomplete,omitempty"` // True if env was set but missing rig/polecat, filled from cwd
 	TownRoot      string `json:"town_root,omitempty"`
-	WorkDir       string `json:"work_dir,omitempty"`    // Current working directory
+	WorkDir       string `json:"work_dir,omitempty"` // Current working directory
 }
 
 var roleCmd = &cobra.Command{
@@ -90,7 +90,7 @@ var roleListCmd = &cobra.Command{
 	Short: "List all known roles",
 	Long: `List all known Gas Town agent roles and their descriptions.
 
-Roles include mayor, deacon, witness, refinery, polecat, and crew.
+Roles include mayor, deacon, librarian, witness, refinery, polecat, and crew.
 Each role has a specific scope and responsibilities within the
 Gas Town multi-agent architecture.`,
 	RunE: runRoleList,
@@ -282,6 +282,12 @@ func detectRole(cwd, townRoot string) RoleInfo {
 		return ctx
 	}
 
+	// Check for librarian role: librarian/
+	if len(parts) >= 1 && parts[0] == "librarian" {
+		ctx.Role = RoleLibrarian
+		return ctx
+	}
+
 	// At this point, first part should be a rig name
 	if len(parts) < 1 {
 		return ctx
@@ -335,6 +341,8 @@ func parseRoleString(s string) (Role, string, string) {
 		return RoleMayor, "", ""
 	case "deacon":
 		return RoleDeacon, "", ""
+	case "librarian":
+		return RoleLibrarian, "", ""
 	case "boot":
 		return RoleBoot, "", ""
 	}
@@ -387,6 +395,8 @@ func (info RoleInfo) ActorString() string {
 		return "mayor"
 	case RoleDeacon:
 		return "deacon"
+	case RoleLibrarian:
+		return "librarian"
 	case RoleWitness:
 		if info.Rig != "" {
 			return fmt.Sprintf("%s/witness", info.Rig)
@@ -421,6 +431,8 @@ func getRoleHome(role Role, rig, polecat, townRoot string) string {
 		return filepath.Join(townRoot, "mayor")
 	case RoleDeacon:
 		return filepath.Join(townRoot, "deacon")
+	case RoleLibrarian:
+		return filepath.Join(townRoot, "librarian")
 	case RoleWitness:
 		if rig == "" {
 			return ""
@@ -585,6 +597,7 @@ func runRoleList(cmd *cobra.Command, args []string) error {
 	}{
 		{RoleMayor, "Global coordinator at mayor/"},
 		{RoleDeacon, "Background supervisor daemon"},
+		{RoleLibrarian, "Town-level docs and knowledge operations specialist"},
 		{RoleWitness, "Per-rig polecat lifecycle manager"},
 		{RoleRefinery, "Per-rig merge queue processor"},
 		{RolePolecat, "Worker with persistent identity, ephemeral sessions"},

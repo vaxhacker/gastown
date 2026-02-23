@@ -122,6 +122,38 @@ func TestRenderRole_Deacon(t *testing.T) {
 	}
 }
 
+func TestRenderRole_Librarian(t *testing.T) {
+	tmpl, err := New()
+	if err != nil {
+		t.Fatalf("New() error = %v", err)
+	}
+
+	data := RoleData{
+		Role:          "librarian",
+		TownRoot:      "/test/town",
+		TownName:      "town",
+		WorkDir:       "/test/town/librarian",
+		DefaultBranch: "main",
+		MayorSession:  "gt-town-mayor",
+		DeaconSession: "gt-town-deacon",
+	}
+
+	output, err := tmpl.RenderRole("librarian", data)
+	if err != nil {
+		t.Fatalf("RenderRole() error = %v", err)
+	}
+
+	if !strings.Contains(output, "Librarian Context") {
+		t.Error("output missing 'Librarian Context'")
+	}
+	if !strings.Contains(output, "Docs and Knowledge Operations") {
+		t.Error("output missing librarian role description")
+	}
+	if !strings.Contains(output, "/test/town/librarian") {
+		t.Error("output missing librarian working directory")
+	}
+}
+
 func TestRenderRole_Refinery_DefaultBranch(t *testing.T) {
 	tmpl, err := New()
 	if err != nil {
@@ -235,7 +267,7 @@ func TestRoleNames(t *testing.T) {
 	}
 
 	names := tmpl.RoleNames()
-	expected := []string{"mayor", "witness", "refinery", "polecat", "crew", "deacon", "boot"}
+	expected := []string{"mayor", "witness", "refinery", "polecat", "crew", "deacon", "librarian", "boot"}
 
 	if len(names) != len(expected) {
 		t.Errorf("RoleNames() = %v, want %v", names, expected)
@@ -247,4 +279,3 @@ func TestRoleNames(t *testing.T) {
 		}
 	}
 }
-
