@@ -715,6 +715,28 @@ func TestIsDoltOptimisticLockError(t *testing.T) {
 	}
 }
 
+func TestIsMissingAgentLabelError(t *testing.T) {
+	tests := []struct {
+		name string
+		err  error
+		want bool
+	}{
+		{"nil error", nil, false},
+		{"missing gt:agent label", fmt.Errorf("gt-foo is not an agent bead (missing gt:agent label)"), true},
+		{"wrapped missing label", fmt.Errorf("updating agent state: %w", fmt.Errorf("missing gt:agent label")), true},
+		{"config error", fmt.Errorf("not initialized"), false},
+		{"generic error", fmt.Errorf("something else"), false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := isMissingAgentLabelError(tt.err); got != tt.want {
+				t.Errorf("isMissingAgentLabelError(%v) = %v, want %v", tt.err, got, tt.want)
+			}
+		})
+	}
+}
+
 func TestBuildBranchName(t *testing.T) {
 	tmpDir := t.TempDir()
 
