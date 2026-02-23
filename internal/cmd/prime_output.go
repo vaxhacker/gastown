@@ -36,6 +36,8 @@ func outputPrimeContext(ctx RoleContext) (string, error) {
 		roleName = "mayor"
 	case RoleDeacon:
 		roleName = "deacon"
+	case RoleLibrarian:
+		roleName = "librarian"
 	case RoleWitness:
 		roleName = "witness"
 	case RoleRefinery:
@@ -94,6 +96,8 @@ func outputPrimeContextFallback(ctx RoleContext) {
 	switch ctx.Role {
 	case RoleMayor:
 		outputMayorContext(ctx)
+	case RoleLibrarian:
+		outputLibrarianContext(ctx)
 	case RoleWitness:
 		outputWitnessContext(ctx)
 	case RoleRefinery:
@@ -131,6 +135,24 @@ func outputMayorContext(ctx RoleContext) {
 	fmt.Println()
 	fmt.Println("## Startup")
 	fmt.Println("Check for handoff messages with 🤝 HANDOFF in subject - continue predecessor's work.")
+	fmt.Println()
+	outputCommandQuickReference(ctx)
+	fmt.Printf("Town root: %s\n", style.Dim.Render(ctx.TownRoot))
+}
+
+func outputLibrarianContext(ctx RoleContext) {
+	fmt.Printf("%s\n\n", style.Bold.Render("# Librarian Context"))
+	fmt.Println("You are the **Librarian** - the docs and knowledge operations specialist.")
+	fmt.Println()
+	fmt.Println("## Responsibilities")
+	fmt.Println("- Keep operational docs aligned with implementation")
+	fmt.Println("- Curate durable references, runbooks, and design records")
+	fmt.Println("- Improve discoverability and navigation of project knowledge")
+	fmt.Println()
+	fmt.Println("## Key Commands")
+	fmt.Println("- `rg -n \"pattern\" docs internal` - Find stale/inconsistent references")
+	fmt.Println("- `" + cli.Name() + " prime` - Load context and startup directives")
+	fmt.Println("- `" + cli.Name() + " mail inbox` - Check coordination requests")
 	fmt.Println()
 	outputCommandQuickReference(ctx)
 	fmt.Printf("Town root: %s\n", style.Dim.Render(ctx.TownRoot))
@@ -259,6 +281,7 @@ func outputUnknownContext(ctx RoleContext) {
 	fmt.Println("- `<rig>/witness/rig/` - Witness role")
 	fmt.Println("- `<rig>/refinery/rig/` - Refinery role")
 	fmt.Println("- `mayor/` or `<rig>/mayor/` - Mayor role")
+	fmt.Println("- `librarian/` - Librarian role")
 	fmt.Println("- Town root is neutral (set GT_ROLE or cd into a role directory)")
 	fmt.Println()
 	fmt.Printf("Town root: %s\n", style.Dim.Render(ctx.TownRoot))
@@ -324,6 +347,14 @@ func outputCommandQuickReference(ctx RoleContext) {
 		fmt.Printf("| Pause rig (daemon won't restart) | `%s rig park <rig>` | ~~gt rig stop~~ (daemon will restart it) |\n", c)
 		fmt.Printf("| Permanently disable rig | `%s rig dock <rig>` | ~~gt rig park~~ (temporary only) |\n", c)
 		fmt.Printf("| Message another agent | `%s nudge <target> \"msg\"` | ~~tmux send-keys~~ (unreliable) |\n", c)
+
+	case RoleLibrarian:
+		fmt.Println("| Want to... | Correct command | Common mistake |")
+		fmt.Println("|------------|----------------|----------------|")
+		fmt.Printf("| Search docs + code references | `rg -n \"term\" docs internal` | ~~grep -R~~ (slower, noisier) |\n")
+		fmt.Printf("| Check assigned coordination work | `%s hook` | ~~waiting for manual ping~~ |\n", c)
+		fmt.Printf("| Read incoming requests | `%s mail inbox` | ~~polling tmux buffers~~ (misses thread state) |\n", c)
+		fmt.Println("| Create follow-up tasks | `bd create \"title\"` | ~~tracking in ad-hoc notes~~ |")
 
 	case RoleBoot:
 		fmt.Println("| Want to... | Correct command | Common mistake |")
@@ -465,6 +496,17 @@ func outputStartupDirective(ctx RoleContext) {
 		fmt.Println("5. Check for attached patrol: `" + cli.Name() + " hook`")
 		fmt.Println("   - If mol attached → **RUN IT** (resume from current step)")
 		fmt.Println("   - If no mol → create patrol: `bd mol wisp mol-deacon-patrol`")
+	case RoleLibrarian:
+		fmt.Println()
+		fmt.Println("---")
+		fmt.Println()
+		fmt.Println("**STARTUP PROTOCOL**: You are the Librarian. Please:")
+		fmt.Println("1. Run `" + cli.Name() + " prime` (loads full context, mail, and pending work)")
+		fmt.Println("2. Announce: \"Librarian, checking in.\"")
+		fmt.Println("3. Check mail: `" + cli.Name() + " mail inbox` - look for 🤝 HANDOFF messages")
+		fmt.Println("4. Check for attached work: `" + cli.Name() + " hook`")
+		fmt.Println("   - If attachment found → **RUN IT**")
+		fmt.Println("   - If no attachment → focus on docs and knowledge hygiene backlog")
 	case RoleBoot:
 		fmt.Println()
 		fmt.Println("---")

@@ -61,7 +61,7 @@ type TownSettings struct {
 	Agents map[string]*RuntimeConfig `json:"agents,omitempty"`
 
 	// RoleAgents maps role names to agent aliases for per-role model selection.
-	// Keys are role names: "mayor", "deacon", "witness", "refinery", "polecat", "crew".
+	// Keys are role names: "mayor", "deacon", "librarian", "witness", "refinery", "polecat", "crew".
 	// Values are agent names (built-in presets or custom agents defined in Agents).
 	// This allows cost optimization by using different models for different roles.
 	// Example: {"mayor": "claude-opus", "witness": "claude-haiku", "polecat": "claude-sonnet"}
@@ -532,10 +532,10 @@ const CurrentRigSettingsVersion = 1
 // RigConfig represents per-rig identity (rig/config.json).
 // This contains only identity - behavioral config is in settings/config.json.
 type RigConfig struct {
-	Type      string       `json:"type"`    // "rig"
-	Version   int          `json:"version"` // schema version
-	Name      string       `json:"name"`    // rig name
-	GitURL    string       `json:"git_url"` // git repository URL
+	Type      string       `json:"type"`               // "rig"
+	Version   int          `json:"version"`            // schema version
+	Name      string       `json:"name"`               // rig name
+	GitURL    string       `json:"git_url"`            // git repository URL
 	PushURL   string       `json:"push_url,omitempty"` // optional push URL (fork for read-only upstreams)
 	LocalRepo string       `json:"local_repo,omitempty"`
 	CreatedAt time.Time    `json:"created_at"` // when the rig was created
@@ -762,7 +762,6 @@ func (rc *RuntimeConfig) BuildArgsWithPrompt(prompt string) []string {
 
 	return args
 }
-
 
 func normalizeRuntimeConfig(rc *RuntimeConfig) *RuntimeConfig {
 	if rc == nil {
@@ -1188,7 +1187,7 @@ func DefaultMergeQueueConfig() *MergeQueueConfig {
 		RetryFlakyTests:                  1,
 		PollInterval:                     "30s",
 		MaxConcurrent:                    1,
-		StaleClaimTimeout:               "30m",
+		StaleClaimTimeout:                "30m",
 	}
 }
 
@@ -1245,7 +1244,7 @@ func DefaultAccountsConfigDir() (string, error) {
 // QuotaState represents the quota management state (mayor/quota.json).
 // Tracks which accounts are rate-limited and when they were last rotated.
 type QuotaState struct {
-	Version  int                         `json:"version"`  // schema version
+	Version  int                          `json:"version"`  // schema version
 	Accounts map[string]AccountQuotaState `json:"accounts"` // handle -> quota state
 }
 
@@ -1265,7 +1264,7 @@ const (
 
 // AccountQuotaState tracks the quota status of a single account.
 type AccountQuotaState struct {
-	Status    AccountQuotaStatus `json:"status"`              // current status
+	Status    AccountQuotaStatus `json:"status"`               // current status
 	LimitedAt string             `json:"limited_at,omitempty"` // RFC3339 when limit was detected
 	ResetsAt  string             `json:"resets_at,omitempty"`  // Human-readable reset time from provider (e.g. "7pm (America/Los_Angeles)")
 	LastUsed  string             `json:"last_used,omitempty"`  // RFC3339 when account was last assigned to a session
