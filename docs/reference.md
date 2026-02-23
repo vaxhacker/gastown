@@ -303,7 +303,7 @@ These are set in tmux session environment when agents are spawned.
 
 | Variable | Purpose | Example |
 |----------|---------|---------|
-| `GT_ROLE` | Agent role type | `mayor`, `witness`, `polecat`, `crew` |
+| `GT_ROLE` | Agent role type | `mayor`, `deacon`, `librarian`, `witness`, `refinery`, `polecat`, `crew` |
 | `GT_ROOT` | Town root directory | `/home/user/gt` |
 | `BD_ACTOR` | Agent identity for attribution | `gastown/polecats/toast` |
 | `GIT_AUTHOR_NAME` | Commit attribution (same as BD_ACTOR) | `gastown/polecats/toast` |
@@ -332,6 +332,7 @@ These are set in tmux session environment when agents are spawned.
 |------|---------------|
 | **Mayor** | `GT_ROLE=mayor`, `BD_ACTOR=mayor` |
 | **Deacon** | `GT_ROLE=deacon`, `BD_ACTOR=deacon` |
+| **Librarian** | `GT_ROLE=librarian`, `BD_ACTOR=librarian` |
 | **Boot** | `GT_ROLE=deacon/boot`, `BD_ACTOR=deacon-boot` |
 | **Witness** | `GT_ROLE=witness`, `GT_RIG=<rig>`, `BD_ACTOR=<rig>/witness` |
 | **Refinery** | `GT_ROLE=refinery`, `GT_RIG=<rig>`, `BD_ACTOR=<rig>/refinery` |
@@ -361,6 +362,7 @@ Understanding this hierarchy is essential for proper configuration.
 |------|-------------------|-------|
 | **Mayor** | `~/gt/mayor/` | Town-level coordinator, isolated from rigs |
 | **Deacon** | `~/gt/deacon/` | Background supervisor daemon |
+| **Librarian** | `~/gt/librarian/` | Town-level docs and knowledge operations |
 | **Witness** | `~/gt/<rig>/witness/` | No git clone, monitors polecats only |
 | **Refinery** | `~/gt/<rig>/refinery/rig/` | Worktree on main branch |
 | **Crew** | `~/gt/<rig>/crew/<name>/rig/` | Persistent human workspace clone |
