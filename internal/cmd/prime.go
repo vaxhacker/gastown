@@ -34,14 +34,15 @@ var primeHookSource string
 type Role string
 
 const (
-	RoleMayor    Role = "mayor"
-	RoleDeacon   Role = "deacon"
-	RoleBoot     Role = "boot"
-	RoleWitness  Role = "witness"
-	RoleRefinery Role = "refinery"
-	RolePolecat  Role = "polecat"
-	RoleCrew     Role = "crew"
-	RoleUnknown  Role = "unknown"
+	RoleMayor     Role = "mayor"
+	RoleDeacon    Role = "deacon"
+	RoleLibrarian Role = "librarian"
+	RoleBoot      Role = "boot"
+	RoleWitness   Role = "witness"
+	RoleRefinery  Role = "refinery"
+	RolePolecat   Role = "polecat"
+	RoleCrew      Role = "crew"
+	RoleUnknown   Role = "unknown"
 )
 
 var primeCmd = &cobra.Command{
@@ -617,6 +618,8 @@ func buildRoleAnnouncement(ctx RoleContext) string {
 		return "Mayor, checking in."
 	case RoleDeacon:
 		return "Deacon, checking in."
+	case RoleLibrarian:
+		return "Librarian, checking in."
 	case RoleBoot:
 		return "Boot, checking in."
 	case RoleWitness:
@@ -653,6 +656,8 @@ func getAgentIdentity(ctx RoleContext) string {
 		return "mayor"
 	case RoleDeacon:
 		return "deacon"
+	case RoleLibrarian:
+		return "librarian"
 	case RoleBoot:
 		return "boot"
 	case RoleWitness:
@@ -724,6 +729,10 @@ func getAgentBeadID(ctx RoleContext) string {
 		return beads.MayorBeadIDTown()
 	case RoleDeacon:
 		return beads.DeaconBeadIDTown()
+	case RoleLibrarian:
+		// Librarian is currently prompt/config backed and does not require a dedicated
+		// town-level agent bead.
+		return ""
 	case RoleBoot:
 		// Boot uses deacon's bead since it's a deacon subprocess
 		return beads.DeaconBeadIDTown()

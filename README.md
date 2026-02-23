@@ -471,6 +471,7 @@ gt completion fish > ~/.config/fish/completions/gt.fish
 | Role            | Description        | Primary Interface    |
 | --------------- | ------------------ | -------------------- |
 | **Mayor**       | AI coordinator     | `gt mayor attach`    |
+| **Librarian**   | Docs/knowledge operator | `cd ~/gt/librarian && gt prime` |
 | **Human (You)** | Crew member        | Your crew directory  |
 | **Polecat**     | Worker agent       | Spawned by Mayor     |
 | **Hook**        | Persistent storage | Git worktree         |
