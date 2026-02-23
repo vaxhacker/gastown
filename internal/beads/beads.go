@@ -127,14 +127,15 @@ type IssueDep struct {
 
 // ListOptions specifies filters for listing issues.
 type ListOptions struct {
-	Status     string // "open", "closed", "all"
-	Type       string // Deprecated: use Label instead. "task", "bug", "feature", "epic"
-	Label      string // Label filter (e.g., "gt:agent", "gt:merge-request")
-	Priority   int    // 0-4, -1 for no filter
-	Parent     string // filter by parent ID
-	Assignee   string // filter by assignee (e.g., "gastown/Toast")
-	NoAssignee bool   // filter for issues with no assignee
-	Limit      int    // Max results (0 = unlimited, overrides bd default of 50)
+	Status                   string // "open", "closed", "all"
+	Type                     string // Deprecated: use Label instead. "task", "bug", "feature", "epic"
+	Label                    string // Label filter (e.g., "gt:agent", "gt:merge-request")
+	Priority                 int    // 0-4, -1 for no filter
+	Parent                   string // filter by parent ID
+	Assignee                 string // filter by assignee (e.g., "gastown/Toast")
+	NoAssignee               bool   // filter for issues with no assignee
+	Limit                    int    // Max results (0 = unlimited, overrides bd default of 50)
+	IncludeAgentSessionWisps bool   // Include ephemeral agent session beads in generic list results
 }
 
 // CreateOptions specifies options for creating an issue.
@@ -458,7 +459,30 @@ func (b *Beads) List(opts ListOptions) ([]*Issue, error) {
 		return nil, fmt.Errorf("parsing bd list output: %w", err)
 	}
 
+	issues = filterAgentSessionWisps(issues, opts)
+
 	return issues, nil
+}
+
+func filterAgentSessionWisps(issues []*Issue, opts ListOptions) []*Issue {
+	if opts.IncludeAgentSessionWisps {
+		return issues
+	}
+	if opts.Label == "gt:agent" || opts.Type == "agent" {
+		return issues
+	}
+
+	filtered := make([]*Issue, 0, len(issues))
+	for _, issue := range issues {
+		if issue == nil {
+			continue
+		}
+		if issue.Ephemeral && IsAgentSessionBead(issue.ID) {
+			continue
+		}
+		filtered = append(filtered, issue)
+	}
+	return filtered
 }
 
 // ListByAssignee returns all issues assigned to a specific assignee.
