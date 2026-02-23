@@ -274,11 +274,9 @@ func (b *Beads) run(args ...string) (_ []byte, retErr error) {
 		beadsDir = ResolveBeadsDir(b.workDir)
 	}
 
-	// In isolated mode, use --db flag to force specific database path
-	// This bypasses bd's routing logic that can redirect to .beads-planning
-	// Skip --db for init command since it creates the database
-	isInit := len(args) > 0 && args[0] == "init"
-	if b.isolated && !isInit {
+	// In isolated mode, always use --db to force a specific database path.
+	// This bypasses bd routing and guarantees test isolation even for `bd init`.
+	if b.isolated {
 		beadsDB := filepath.Join(beadsDir, "beads.db")
 		fullArgs = append([]string{"--db", beadsDB}, fullArgs...)
 	}

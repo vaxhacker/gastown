@@ -42,7 +42,9 @@ type PatrolConfig struct {
 func findActivePatrol(cfg PatrolConfig) (patrolID, patrolLine string, found bool, err error) {
 	b := cfg.Beads
 	if b == nil {
-		b = beads.New(cfg.BeadsDir)
+		// Use isolated mode to force bd --db to cfg.BeadsDir/.beads and avoid
+		// routing leakage via inherited env (BD_ACTOR/GT_ROOT/HOME).
+		b = beads.NewIsolated(cfg.BeadsDir)
 	}
 
 	// Find hooked patrol beads for this agent
