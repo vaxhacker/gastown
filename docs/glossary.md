@@ -29,6 +29,9 @@ Chief-of-staff agent responsible for initiating Convoys, coordinating work distr
 ### Deacon
 Daemon beacon running continuous Patrol cycles. The Deacon ensures worker activity, monitors system health, and triggers recovery when agents become unresponsive. Think of the Deacon as the system's watchdog.
 
+### Librarian
+Town-level documentation and knowledge operations specialist. The Librarian keeps operational and architectural docs aligned with current implementation, curates durable references, and improves discoverability for agents and operators.
+
 ### Dogs
 The Deacon's crew of maintenance agents handling background tasks like cleanup, health checks, and system maintenance.
 
