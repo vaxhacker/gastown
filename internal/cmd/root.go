@@ -53,6 +53,7 @@ var beadsExemptCommands = map[string]bool{
 	"hook":          true,
 	"prime":         true,
 	"nudge":         true,
+	"wall":          true,
 	"seance":        true,
 	"doctor":        true,
 	"dolt":          true,
