@@ -335,7 +335,8 @@ func detectRole(cwd, townRoot string) RoleInfo {
 func parseRoleString(s string) (Role, string, string) {
 	s = strings.TrimSpace(s)
 
-	// Simple roles
+	// Simple roles (town-level only — rig-scoped roles like librarian
+	// must always be qualified as {rig}/librarian)
 	switch s {
 	case "mayor":
 		return RoleMayor, "", ""
@@ -343,8 +344,6 @@ func parseRoleString(s string) (Role, string, string) {
 		return RoleDeacon, "", ""
 	case "boot":
 		return RoleBoot, "", ""
-	case "librarian":
-		return RoleLibrarian, "", ""
 	}
 
 	// Compound roles: rig/role or rig/polecats/name or rig/crew/name
@@ -401,7 +400,7 @@ func (info RoleInfo) ActorString() string {
 		if info.Rig != "" {
 			return fmt.Sprintf("%s/librarian", info.Rig)
 		}
-		return "librarian"
+		return "" // Librarian is rig-scoped; no rig = invalid
 	case RoleWitness:
 		if info.Rig != "" {
 			return fmt.Sprintf("%s/witness", info.Rig)
