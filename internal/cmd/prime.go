@@ -40,15 +40,15 @@ var primeHandoffReason string
 type Role string
 
 const (
-	RoleMayor     Role = "mayor"
-	RoleDeacon    Role = "deacon"
+	RoleMayor    Role = "mayor"
+	RoleDeacon   Role = "deacon"
 	RoleLibrarian Role = "librarian"
-	RoleBoot      Role = "boot"
-	RoleWitness   Role = "witness"
-	RoleRefinery  Role = "refinery"
-	RolePolecat   Role = "polecat"
-	RoleCrew      Role = "crew"
-	RoleDog       Role = "dog"
+	RoleBoot     Role = "boot"
+	RoleWitness  Role = "witness"
+	RoleRefinery Role = "refinery"
+	RolePolecat  Role = "polecat"
+	RoleCrew     Role = "crew"
+	RoleDog      Role = "dog"
 	RoleUnknown   Role = "unknown"
 )
 
@@ -707,8 +707,6 @@ func buildRoleAnnouncement(ctx RoleContext) string {
 		return "Mayor, checking in."
 	case RoleDeacon:
 		return "Deacon, checking in."
-	case RoleLibrarian:
-		return "Librarian, checking in."
 	case RoleBoot:
 		return "Boot, checking in."
 	case RoleWitness:
@@ -719,6 +717,8 @@ func buildRoleAnnouncement(ctx RoleContext) string {
 		return fmt.Sprintf("%s Polecat %s, checking in.", ctx.Rig, ctx.Polecat)
 	case RoleCrew:
 		return fmt.Sprintf("%s Crew %s, checking in.", ctx.Rig, ctx.Polecat)
+	case RoleLibrarian:
+		return fmt.Sprintf("%s Librarian, checking in.", ctx.Rig)
 	default:
 		return "Agent, checking in."
 	}
@@ -745,17 +745,14 @@ func getAgentIdentity(ctx RoleContext) string {
 		return "mayor"
 	case RoleDeacon:
 		return "deacon"
-	case RoleLibrarian:
-		if ctx.Rig != "" {
-			return fmt.Sprintf("%s/librarian", ctx.Rig)
-		}
-		return ""
 	case RoleBoot:
 		return "boot"
 	case RoleWitness:
 		return fmt.Sprintf("%s/witness", ctx.Rig)
 	case RoleRefinery:
 		return fmt.Sprintf("%s/refinery", ctx.Rig)
+	case RoleLibrarian:
+		return fmt.Sprintf("%s/librarian", ctx.Rig)
 	default:
 		return ""
 	}
@@ -821,12 +818,6 @@ func getAgentBeadID(ctx RoleContext) string {
 		return beads.MayorBeadIDTown()
 	case RoleDeacon:
 		return beads.DeaconBeadIDTown()
-	case RoleLibrarian:
-		if ctx.Rig != "" {
-			prefix := beads.GetPrefixForRig(ctx.TownRoot, ctx.Rig)
-			return beads.LibrarianBeadIDWithPrefix(prefix, ctx.Rig)
-		}
-		return ""
 	case RoleBoot:
 		// Boot uses deacon's bead since it's a deacon subprocess
 		return beads.DeaconBeadIDTown()
@@ -852,6 +843,12 @@ func getAgentBeadID(ctx RoleContext) string {
 		if ctx.Rig != "" && ctx.Polecat != "" {
 			prefix := beads.GetPrefixForRig(ctx.TownRoot, ctx.Rig)
 			return beads.CrewBeadIDWithPrefix(prefix, ctx.Rig, ctx.Polecat)
+		}
+		return ""
+	case RoleLibrarian:
+		if ctx.Rig != "" {
+			prefix := beads.GetPrefixForRig(ctx.TownRoot, ctx.Rig)
+			return beads.LibrarianBeadIDWithPrefix(prefix, ctx.Rig)
 		}
 		return ""
 	default:
