@@ -79,6 +79,7 @@ func TestIsTownLevelAddress(t *testing.T) {
 		{"mayor/", true},
 		{"deacon", true},
 		{"deacon/", true},
+		{"librarian", false},
 		{"overseer", true},
 		{"gastown/refinery", false},
 		{"gastown/polecats/Toast", false},
@@ -118,6 +119,7 @@ func TestAddressToSessionIDs(t *testing.T) {
 		{"deacon", []string{"hq-deacon"}},
 
 		// Rig singletons - single session (no crew/polecat ambiguity)
+		{"gastown/librarian", []string{"gt-librarian"}},
 		{"gastown/refinery", []string{"gt-refinery"}},
 		{"beads/witness", []string{"bd-witness"}},
 
@@ -130,9 +132,9 @@ func TestAddressToSessionIDs(t *testing.T) {
 		{"gastown/polecats/nux", []string{"gt-nux"}},
 
 		// Invalid addresses - empty result
-		{"gastown/", nil},  // Empty target
-		{"gastown", nil},   // No slash
-		{"", nil},          // Empty address
+		{"gastown/", nil}, // Empty target
+		{"gastown", nil},  // No slash
+		{"", nil},         // Empty address
 	}
 
 	for _, tt := range tests {
@@ -187,9 +189,9 @@ func TestShouldBeWisp(t *testing.T) {
 	r := &Router{}
 
 	tests := []struct {
-		name    string
-		msg     *Message
-		want    bool
+		name string
+		msg  *Message
+		want bool
 	}{
 		{
 			name: "explicit wisp flag",
@@ -725,9 +727,9 @@ func TestParseGroupAddress(t *testing.T) {
 
 func TestAgentBeadToAddress(t *testing.T) {
 	tests := []struct {
-		name   string
-		bead   *agentBead
-		want   string
+		name string
+		bead *agentBead
+		want string
 	}{
 		{
 			name: "nil bead",

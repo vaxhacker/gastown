@@ -746,7 +746,10 @@ func getAgentIdentity(ctx RoleContext) string {
 	case RoleDeacon:
 		return "deacon"
 	case RoleLibrarian:
-		return "librarian"
+		if ctx.Rig != "" {
+			return fmt.Sprintf("%s/librarian", ctx.Rig)
+		}
+		return ""
 	case RoleBoot:
 		return "boot"
 	case RoleWitness:
@@ -819,8 +822,10 @@ func getAgentBeadID(ctx RoleContext) string {
 	case RoleDeacon:
 		return beads.DeaconBeadIDTown()
 	case RoleLibrarian:
-		// Librarian is currently prompt/config backed and does not require a dedicated
-		// town-level agent bead.
+		if ctx.Rig != "" {
+			prefix := beads.GetPrefixForRig(ctx.TownRoot, ctx.Rig)
+			return beads.LibrarianBeadIDWithPrefix(prefix, ctx.Rig)
+		}
 		return ""
 	case RoleBoot:
 		// Boot uses deacon's bead since it's a deacon subprocess

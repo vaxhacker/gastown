@@ -313,7 +313,7 @@ These are set in tmux session environment when agents are spawned.
 
 | Variable | Purpose | Roles |
 |----------|---------|-------|
-| `GT_RIG` | Rig name | witness, refinery, polecat, crew |
+| `GT_RIG` | Rig name | librarian, witness, refinery, polecat, crew |
 | `GT_POLECAT` | Polecat worker name | polecat only |
 | `GT_CREW` | Crew worker name | crew only |
 | `BEADS_AGENT_NAME` | Agent name for beads operations | polecat, crew |
@@ -332,7 +332,7 @@ These are set in tmux session environment when agents are spawned.
 |------|---------------|
 | **Mayor** | `GT_ROLE=mayor`, `BD_ACTOR=mayor` |
 | **Deacon** | `GT_ROLE=deacon`, `BD_ACTOR=deacon` |
-| **Librarian** | `GT_ROLE=librarian`, `BD_ACTOR=librarian` |
+| **Librarian** | `GT_ROLE=librarian`, `GT_RIG=<rig>`, `BD_ACTOR=<rig>/librarian` |
 | **Boot** | `GT_ROLE=deacon/boot`, `BD_ACTOR=deacon-boot` |
 | **Witness** | `GT_ROLE=witness`, `GT_RIG=<rig>`, `BD_ACTOR=<rig>/witness` |
 | **Refinery** | `GT_ROLE=refinery`, `GT_RIG=<rig>`, `BD_ACTOR=<rig>/refinery` |
@@ -362,7 +362,7 @@ Understanding this hierarchy is essential for proper configuration.
 |------|-------------------|-------|
 | **Mayor** | `~/gt/mayor/` | Town-level coordinator, isolated from rigs |
 | **Deacon** | `~/gt/deacon/` | Background supervisor daemon |
-| **Librarian** | `~/gt/librarian/` | Town-level docs and knowledge operations |
+| **Librarian** | `~/gt/<rig>/librarian/` | Rig-level docs and knowledge operations |
 | **Witness** | `~/gt/<rig>/witness/` | No git clone, monitors polecats only |
 | **Refinery** | `~/gt/<rig>/refinery/rig/` | Worktree on main branch |
 | **Crew** | `~/gt/<rig>/crew/<name>/rig/` | Persistent human workspace clone |

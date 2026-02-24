@@ -24,20 +24,21 @@ Creates a timestamped backup snapshot for the town's beads data, including:
 - town-level `.beads/`
 - each rig's `mayor/rig/.beads/` (if present)
 
-Backups are written to `"$GT_TOWN_ROOT/backups/beads/"` and old snapshots are pruned.
+Backups are written to `"$TOWN_ROOT/backups/beads/"` and old snapshots are pruned.
 
 ## Step 1: Preconditions
 
 ```bash
 set -euo pipefail
 
-if [ -z "${GT_TOWN_ROOT:-}" ]; then
-  echo "SKIP: GT_TOWN_ROOT is not set in this session"
+TOWN_ROOT="${GT_TOWN_ROOT:-${GT_ROOT:-}}"
+if [ -z "$TOWN_ROOT" ]; then
+  echo "SKIP: neither GT_TOWN_ROOT nor GT_ROOT is set in this session"
   exit 0
 fi
 
-if [ ! -d "$GT_TOWN_ROOT" ]; then
-  echo "SKIP: GT_TOWN_ROOT does not exist: $GT_TOWN_ROOT"
+if [ ! -d "$TOWN_ROOT" ]; then
+  echo "SKIP: town root does not exist: $TOWN_ROOT"
   exit 0
 fi
 ```
@@ -45,7 +46,6 @@ fi
 ## Step 2: Create timestamped backup directory
 
 ```bash
-TOWN_ROOT="$GT_TOWN_ROOT"
 BACKUP_ROOT="$TOWN_ROOT/backups/beads"
 TIMESTAMP="$(date -u +%Y%m%d-%H%M%S)"
 SNAPSHOT_DIR="$BACKUP_ROOT/$TIMESTAMP"
@@ -53,7 +53,20 @@ SNAPSHOT_DIR="$BACKUP_ROOT/$TIMESTAMP"
 mkdir -p "$SNAPSHOT_DIR"
 ```
 
-## Step 3: Backup town-level data
+## Step 3: Quiesce Dolt writes (best-effort)
+
+```bash
+DOLT_WAS_RUNNING=0
+if gt dolt status 2>/dev/null | grep -q "is running"; then
+  DOLT_WAS_RUNNING=1
+  if ! gt dolt stop >/dev/null 2>&1; then
+    echo "WARN: could not stop Dolt server cleanly; continuing with live snapshot"
+    DOLT_WAS_RUNNING=0
+  fi
+fi
+```
+
+## Step 4: Backup town-level data
 
 ```bash
 if [ -d "$TOWN_ROOT/.dolt-data" ]; then
@@ -69,7 +82,7 @@ else
 fi
 ```
 
-## Step 4: Backup rig-level beads metadata
+## Step 5: Backup rig-level beads metadata
 
 ```bash
 RIGS_JSON="$(gt rig list --json 2>/dev/null || echo '[]')"
@@ -88,7 +101,17 @@ for RIG in $(echo "$RIGS_JSON" | jq -r '.[].name // empty'); do
 done
 ```
 
-## Step 5: Write manifest and checksums
+## Step 6: Restart Dolt server if it was running
+
+```bash
+if [ "${DOLT_WAS_RUNNING:-0}" = "1" ]; then
+  if ! gt dolt start >/dev/null 2>&1; then
+    echo "WARN: Dolt server was running before backup but failed to restart"
+  fi
+fi
+```
+
+## Step 7: Write manifest and checksums
 
 ```bash
 {
@@ -105,7 +128,7 @@ done
 )
 ```
 
-## Step 6: Prune old backups (keep most recent 48)
+## Step 8: Prune old backups (keep most recent 48)
 
 ```bash
 KEEP_COUNT=48

@@ -160,9 +160,11 @@ func (c *AgentBeadsCheck) Run(ctx *CheckContext) *CheckResult {
 		// Check rig-specific agents (using canonical naming: prefix-rig-role-name)
 		witnessID := beads.WitnessBeadIDWithPrefix(prefix, rigName)
 		refineryID := beads.RefineryBeadIDWithPrefix(prefix, rigName)
+		librarianID := beads.LibrarianBeadIDWithPrefix(prefix, rigName)
 
 		checkAgentBead(witnessID)
 		checkAgentBead(refineryID)
+		checkAgentBead(librarianID)
 
 		// Check crew worker agents
 		crewWorkers := listCrewWorkers(ctx.TownRoot, rigName)
@@ -330,6 +332,14 @@ func (c *AgentBeadsCheck) Fix(ctx *CheckContext) error {
 		if err := fixAgentBead(bd, refineryID,
 			fmt.Sprintf("Refinery for %s - processes merge queue.", rigName),
 			&beads.AgentFields{RoleType: "refinery", Rig: rigName, AgentState: "idle"},
+		); err != nil {
+			errs = append(errs, err)
+		}
+
+		librarianID := beads.LibrarianBeadIDWithPrefix(prefix, rigName)
+		if err := fixAgentBead(bd, librarianID,
+			fmt.Sprintf("Librarian for %s - docs and knowledge operations specialist.", rigName),
+			&beads.AgentFields{RoleType: "librarian", Rig: rigName, AgentState: "idle"},
 		); err != nil {
 			errs = append(errs, err)
 		}

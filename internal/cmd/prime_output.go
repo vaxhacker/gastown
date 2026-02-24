@@ -1,9 +1,9 @@
 package cmd
 
 import (
-	"github.com/steveyegge/gastown/internal/cli"
 	"encoding/json"
 	"fmt"
+	"github.com/steveyegge/gastown/internal/cli"
 	"os"
 	"path/filepath"
 	"time"
@@ -148,6 +148,8 @@ func outputLibrarianContext(ctx RoleContext) {
 	fmt.Println("- Keep operational docs aligned with implementation")
 	fmt.Println("- Curate durable references, runbooks, and design records")
 	fmt.Println("- Improve discoverability and navigation of project knowledge")
+	fmt.Println("- Open beads for doc gaps and route fixes to the owning rig")
+	fmt.Println("- Avoid direct cross-rig edits unless explicitly requested")
 	fmt.Println()
 	fmt.Println("## Key Commands")
 	fmt.Println("- `rg -n \"pattern\" docs internal` - Find stale/inconsistent references")
@@ -278,7 +280,7 @@ func outputUnknownContext(ctx RoleContext) {
 	fmt.Println("- `<rig>/witness/rig/` - Witness role")
 	fmt.Println("- `<rig>/refinery/rig/` - Refinery role")
 	fmt.Println("- `mayor/` or `<rig>/mayor/` - Mayor role")
-	fmt.Println("- `librarian/` - Librarian role")
+	fmt.Println("- `<rig>/librarian/` - Librarian role")
 	fmt.Println("- Town root is neutral (set GT_ROLE or cd into a role directory)")
 	fmt.Println()
 	fmt.Printf("Town root: %s\n", style.Dim.Render(ctx.TownRoot))
@@ -503,7 +505,7 @@ func outputStartupDirective(ctx RoleContext) {
 		fmt.Println("3. Check mail: `" + cli.Name() + " mail inbox` - look for 🤝 HANDOFF messages")
 		fmt.Println("4. Check for attached work: `" + cli.Name() + " hook`")
 		fmt.Println("   - If attachment found → **RUN IT**")
-		fmt.Println("   - If no attachment → focus on docs and knowledge hygiene backlog")
+		fmt.Println("   - If no attachment → run docs drift sweep and file/sling follow-up beads to owning rigs")
 	case RoleBoot:
 		fmt.Println()
 		fmt.Println("---")

@@ -43,6 +43,13 @@ func TestParseSessionName(t *testing.T) {
 			wantRole: RoleDeacon,
 		},
 		{
+			name:       "librarian",
+			session:    "gt-librarian",
+			wantRole:   RoleLibrarian,
+			wantRig:    "gastown",
+			wantPrefix: "gt",
+		},
+		{
 			name:     "boot",
 			session:  "hq-boot",
 			wantRole: RoleDeacon,
@@ -214,6 +221,11 @@ func TestAgentIdentity_SessionName(t *testing.T) {
 			want:     "hq-deacon",
 		},
 		{
+			name:     "librarian",
+			identity: AgentIdentity{Role: RoleLibrarian, Rig: "gastown", Prefix: "gt"},
+			want:     "gt-librarian",
+		},
+		{
 			name:     "boot",
 			identity: AgentIdentity{Role: RoleDeacon, Name: "boot"},
 			want:     "hq-boot",
@@ -271,6 +283,11 @@ func TestAgentIdentity_Address(t *testing.T) {
 			want:     "deacon",
 		},
 		{
+			name:     "librarian",
+			identity: AgentIdentity{Role: RoleLibrarian, Rig: "gastown", Prefix: "gt"},
+			want:     "gastown/librarian",
+		},
+		{
 			name:     "witness",
 			identity: AgentIdentity{Role: RoleWitness, Rig: "gastown", Prefix: "gt"},
 			want:     "gastown/witness",
@@ -311,6 +328,7 @@ func TestParseSessionName_RoundTrip(t *testing.T) {
 	sessions := []string{
 		"hq-mayor",
 		"hq-deacon",
+		"gt-librarian",
 		"gt-witness",
 		"bd-refinery",
 		"gt-crew-max",
@@ -348,6 +366,11 @@ func TestParseAddress(t *testing.T) {
 			name:    "deacon",
 			address: "deacon",
 			want:    AgentIdentity{Role: RoleDeacon},
+		},
+		{
+			name:    "librarian",
+			address: "gastown/librarian",
+			want:    AgentIdentity{Role: RoleLibrarian, Rig: "gastown", Prefix: PrefixFor("gastown")},
 		},
 		{
 			name:    "witness",

@@ -115,12 +115,12 @@ func AllRoles() []string {
 
 // TownRoles returns roles that operate at town scope.
 func TownRoles() []string {
-	return []string{"mayor", "deacon", "librarian", "dog"}
+	return []string{"mayor", "deacon", "dog"}
 }
 
 // RigRoles returns roles that operate at rig scope.
 func RigRoles() []string {
-	return []string{"witness", "refinery", "polecat", "crew"}
+	return []string{"librarian", "witness", "refinery", "polecat", "crew"}
 }
 
 // IsAutonomous returns whether a role runs without user input.

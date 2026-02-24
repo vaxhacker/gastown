@@ -72,6 +72,11 @@ func buildAgentBeadID(identity string, role Role, townRoot string) string {
 		return beads.MayorBeadIDTown()
 	case RoleDeacon:
 		return beads.DeaconBeadIDTown()
+	case RoleLibrarian:
+		if len(parts) >= 1 {
+			return beads.LibrarianBeadIDWithPrefix(getPrefix(parts[0]), parts[0])
+		}
+		return ""
 	case RoleWitness:
 		if len(parts) >= 1 {
 			return beads.WitnessBeadIDWithPrefix(getPrefix(parts[0]), parts[0])
