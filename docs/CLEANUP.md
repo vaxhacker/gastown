@@ -63,7 +63,7 @@ A comprehensive catalog of all cleanup-related commands in the gastown/beads eco
 | Command | What it does |
 |---------|-------------|
 | `gt crew stop [name]` | Stops crew tmux sessions |
-| `gt crew restart [name]` | Kills and restarts crew fresh ("clean slate", no handoff mail) |
+| `gt crew restart [name]` | Kills and restarts crew fresh ("clean slate", no handoff mail, interactive mode may prompt approvals) |
 | `gt crew remove <name>` | Removes workspace, closes agent bead |
 | `gt crew remove <name> --purge` | Full obliteration: deletes agent bead, unassigns beads, clears mail |
 | `gt crew pristine [name]` | Syncs workspaces with remote (`git pull`) |
