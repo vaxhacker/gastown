@@ -54,8 +54,8 @@ Commands:
   gt crew list             List workspaces with status
   gt crew at <name>        Attach to session
   gt crew remove <name>    Remove workspace
-  gt crew refresh <name>   Context cycle with handoff mail
-  gt crew restart <name>   Kill and restart session fresh`,
+  gt crew refresh <name>   Context cycle (interactive mode, may prompt approvals)
+  gt crew restart <name>   Restart fresh (interactive mode, may prompt approvals)`,
 }
 
 var crewAddCmd = &cobra.Command{
@@ -166,6 +166,12 @@ var crewRefreshCmd = &cobra.Command{
 Sends a handoff mail to the workspace's own inbox, then restarts the session.
 The new session reads the handoff mail and resumes work.
 
+WARNING:
+  refresh uses interactive mode (approval prompts enabled).
+  If you need non-interactive/no-approval operation, use:
+    gt crew stop <name> --rig <rig>
+    gt crew at <name> --rig <rig> --detached --agent claude
+
 Examples:
   gt crew refresh dave                           # Refresh with auto-generated handoff
   gt crew refresh dave -m "Working on gt-123"    # Add custom message`,
@@ -196,6 +202,12 @@ var crewRestartCmd = &cobra.Command{
 
 Useful when a crew member gets confused or needs a clean slate.
 Unlike 'refresh', this does NOT send handoff mail - it's a clean start.
+
+WARNING:
+  restart uses interactive mode (approval prompts enabled).
+  If you need non-interactive/no-approval operation, use:
+    gt crew stop <name> --rig <rig>
+    gt crew at <name> --rig <rig> --detached --agent claude
 
 The command will:
 1. Kill existing tmux session if running
