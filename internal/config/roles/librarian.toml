@@ -1,9 +1,10 @@
 # Librarian role definition
-# Per-rig documentation and knowledge operations specialist.
+# On-demand documentation and knowledge operations specialist.
+# Started with a task, executes it, submits via refinery, exits.
 
 role = "librarian"
 scope = "rig"
-nudge = "Run 'gt prime', update docs in owning projects, and file beads for doc/knowledge gaps."
+nudge = "Run 'gt prime', execute your assigned task, submit via 'gt done', then exit."
 prompt_template = "librarian.md.tmpl"
 
 [session]
@@ -13,12 +14,11 @@ needs_pre_sync = false
 start_command = "exec claude --dangerously-skip-permissions"
 
 [env]
-# GT_ROLE is set by AgentEnv() to "{rig}/librarian" at session start.
-# GT_SCOPE declares this role as rig-scoped (not town-level).
+GT_ROLE = "librarian"
 GT_SCOPE = "rig"
 
 [health]
 ping_timeout = "30s"
 consecutive_failures = 3
 kill_cooldown = "5m"
-stuck_threshold = "2h"
+stuck_threshold = "30m"
