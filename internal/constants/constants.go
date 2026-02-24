@@ -178,6 +178,9 @@ const (
 
 	// RoleDeacon is the deacon agent role.
 	RoleDeacon = "deacon"
+
+	// RoleLibrarian is the librarian agent role.
+	RoleLibrarian = "librarian"
 )
 
 // Role emojis - centralized for easy customization.
@@ -200,6 +203,9 @@ const (
 
 	// EmojiPolecat is the polecat emoji (transient worker).
 	EmojiPolecat = "😺"
+
+	// EmojiLibrarian is the librarian emoji (knowledge keeper).
+	EmojiLibrarian = "📚"
 )
 
 // RoleEmoji returns the emoji for a given role name.
@@ -217,6 +223,8 @@ func RoleEmoji(role string) string {
 		return EmojiCrew
 	case RolePolecat:
 		return EmojiPolecat
+	case RoleLibrarian:
+		return EmojiLibrarian
 	default:
 		return "❓"
 	}

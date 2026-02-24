@@ -10,14 +10,14 @@ import (
 type Role string
 
 const (
-	RoleMayor     Role = "mayor"
-	RoleDeacon    Role = "deacon"
-	RoleLibrarian Role = "librarian"
-	RoleOverseer  Role = "overseer"
-	RoleWitness   Role = "witness"
-	RoleRefinery  Role = "refinery"
+	RoleMayor    Role = "mayor"
+	RoleDeacon   Role = "deacon"
+	RoleOverseer Role = "overseer"
+	RoleWitness  Role = "witness"
+	RoleRefinery Role = "refinery"
 	RoleCrew      Role = "crew"
 	RolePolecat   Role = "polecat"
+	RoleLibrarian Role = "librarian"
 )
 
 // AgentIdentity represents a parsed Gas Town agent identity.
@@ -178,8 +178,6 @@ func (a *AgentIdentity) SessionName() string {
 			return BootSessionName()
 		}
 		return DeaconSessionName()
-	case RoleLibrarian:
-		return LibrarianSessionName(a.prefix())
 	case RoleOverseer:
 		return OverseerSessionName()
 	case RoleWitness:
@@ -190,6 +188,8 @@ func (a *AgentIdentity) SessionName() string {
 		return CrewSessionName(a.prefix(), a.Name)
 	case RolePolecat:
 		return PolecatSessionName(a.prefix(), a.Name)
+	case RoleLibrarian:
+		return fmt.Sprintf("%s-librarian", a.prefix())
 	default:
 		return ""
 	}
@@ -221,8 +221,6 @@ func (a *AgentIdentity) BeaconAddress() string {
 		return "mayor"
 	case RoleDeacon:
 		return "deacon"
-	case RoleLibrarian:
-		return BeaconRecipient("librarian", "", a.Rig)
 	case RoleOverseer:
 		return "overseer"
 	case RoleWitness:
@@ -233,6 +231,8 @@ func (a *AgentIdentity) BeaconAddress() string {
 		return BeaconRecipient("crew", a.Name, a.Rig)
 	case RolePolecat:
 		return BeaconRecipient("polecat", a.Name, a.Rig)
+	case RoleLibrarian:
+		return BeaconRecipient("librarian", "", a.Rig)
 	default:
 		return ""
 	}
@@ -252,8 +252,6 @@ func (a *AgentIdentity) Address() string {
 		return "mayor"
 	case RoleDeacon:
 		return "deacon"
-	case RoleLibrarian:
-		return fmt.Sprintf("%s/librarian", a.Rig)
 	case RoleOverseer:
 		return "overseer"
 	case RoleWitness:
@@ -264,6 +262,8 @@ func (a *AgentIdentity) Address() string {
 		return fmt.Sprintf("%s/crew/%s", a.Rig, a.Name)
 	case RolePolecat:
 		return fmt.Sprintf("%s/polecats/%s", a.Rig, a.Name)
+	case RoleLibrarian:
+		return fmt.Sprintf("%s/librarian", a.Rig)
 	default:
 		return ""
 	}

@@ -147,7 +147,7 @@ func TestRenderRole_Librarian(t *testing.T) {
 	if !strings.Contains(output, "Librarian Context") {
 		t.Error("output missing 'Librarian Context'")
 	}
-	if !strings.Contains(output, "Docs and Knowledge Operations") {
+	if !strings.Contains(output, "Knowledge Master") {
 		t.Error("output missing librarian role description")
 	}
 	if !strings.Contains(output, "/test/town/librarian") {

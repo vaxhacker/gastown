@@ -343,6 +343,8 @@ func parseRoleString(s string) (Role, string, string) {
 		return RoleDeacon, "", ""
 	case "boot":
 		return RoleBoot, "", ""
+	case "librarian":
+		return RoleLibrarian, "", ""
 	}
 
 	// Compound roles: rig/role or rig/polecats/name or rig/crew/name
@@ -399,7 +401,7 @@ func (info RoleInfo) ActorString() string {
 		if info.Rig != "" {
 			return fmt.Sprintf("%s/librarian", info.Rig)
 		}
-		return ""
+		return "librarian"
 	case RoleWitness:
 		if info.Rig != "" {
 			return fmt.Sprintf("%s/witness", info.Rig)
