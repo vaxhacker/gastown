@@ -74,6 +74,9 @@ func runMailSend(cmd *cobra.Command, args []string) error {
 	// Determine sender
 	from := detectSender()
 
+	// Expand rig-scoped role shortcuts like "librarian/" to "<rig>/librarian".
+	to = expandMailRoleShortcut(to, from)
+
 	// Create message with auto-generated ID and thread ID
 	msg := mail.NewMessage(from, to, mailSubject, mailBody)
 
@@ -232,4 +235,36 @@ func generateThreadID() string {
 	b := make([]byte, 6)
 	_, _ = rand.Read(b) // crypto/rand.Read only fails on broken system
 	return "thread-" + hex.EncodeToString(b)
+}
+
+func expandMailRoleShortcut(to, from string) string {
+	role := strings.TrimSuffix(strings.TrimSpace(to), "/")
+	if role != "witness" && role != "refinery" && role != "librarian" {
+		return to
+	}
+
+	rig := rigFromIdentity(from)
+	if rig == "" {
+		if info, err := GetRole(); err == nil && info.Rig != "" {
+			rig = info.Rig
+		}
+	}
+	if rig == "" {
+		return to
+	}
+
+	return rig + "/" + role
+}
+
+func rigFromIdentity(identity string) string {
+	identity = strings.TrimSpace(identity)
+	if identity == "" || identity == "overseer" || identity == "mayor/" || identity == "deacon/" {
+		return ""
+	}
+
+	parts := strings.Split(identity, "/")
+	if len(parts) < 2 || parts[0] == "" {
+		return ""
+	}
+	return parts[0]
 }
