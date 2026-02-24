@@ -18,18 +18,14 @@ var (
 	librarianStatusJSON    bool
 	librarianAgentOverride string
 	librarianEnvOverrides  []string
-	librarianTask          string
 )
 
 var librarianCmd = &cobra.Command{
 	Use:     "librarian",
 	GroupID: GroupAgents,
-	Short:   "Manage the Librarian (on-demand docs and knowledge operator)",
+	Short:   "Manage the Librarian (per-rig docs and knowledge operator)",
 	RunE:    requireSubcommand,
-	Long: `Manage the Librarian - an on-demand docs and knowledge operations specialist.
-
-The Librarian is started with a specific task, executes it, submits changes
-through the refinery (never pushes to main directly), and exits when done.
+	Long: `Manage the Librarian - the per-rig docs and knowledge operations specialist.
 
 The Librarian focuses on:
   - Keeping docs aligned with implementation behavior
@@ -41,11 +37,8 @@ Role shortcuts: "librarian" in mail/nudge addresses resolves to this rig's Libra
 
 var librarianStartCmd = &cobra.Command{
 	Use:   "start [rig]",
-	Short: "Start the librarian with a task",
-	Long: `Start the Librarian for a rig with an on-demand task.
-
-The librarian executes its assigned task, submits changes through the
-refinery, and exits when done. Use --task to provide the assignment.
+	Short: "Start the librarian",
+	Long: `Start the Librarian for a rig.
 
 If rig is not specified, infers it from the current directory.`,
 	Args: cobra.MaximumNArgs(1),
@@ -86,10 +79,9 @@ If rig is not specified, infers it from the current directory.`,
 
 var librarianRestartCmd = &cobra.Command{
 	Use:   "restart [rig]",
-	Short: "Restart the librarian with a new task",
-	Long: `Restart the Librarian for a rig (stops existing session, starts fresh).
+	Short: "Restart the librarian",
+	Long: `Restart the Librarian for a rig.
 
-Use --task to provide a new assignment for the restarted session.
 If rig is not specified, infers it from the current directory.`,
 	Args: cobra.MaximumNArgs(1),
 	RunE: runLibrarianRestart,
@@ -104,11 +96,9 @@ type LibrarianStatusOutput struct {
 func init() {
 	librarianStartCmd.Flags().StringVar(&librarianAgentOverride, "agent", "", "Agent alias to run the Librarian with (overrides town default)")
 	librarianStartCmd.Flags().StringArrayVar(&librarianEnvOverrides, "env", nil, "Environment variable override (KEY=VALUE, can be repeated)")
-	librarianStartCmd.Flags().StringVar(&librarianTask, "task", "", "Task assignment for the librarian session")
 
 	librarianRestartCmd.Flags().StringVar(&librarianAgentOverride, "agent", "", "Agent alias to run the Librarian with (overrides town default)")
 	librarianRestartCmd.Flags().StringArrayVar(&librarianEnvOverrides, "env", nil, "Environment variable override (KEY=VALUE, can be repeated)")
-	librarianRestartCmd.Flags().StringVar(&librarianTask, "task", "", "Task assignment for the librarian session")
 
 	librarianStatusCmd.Flags().BoolVar(&librarianStatusJSON, "json", false, "Output as JSON")
 
@@ -201,7 +191,8 @@ func runLibrarianStart(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	cfg := session.SessionConfig{
+	theme := tmux.AssignTheme(rigName)
+	_, err = session.StartSession(t, session.SessionConfig{
 		SessionID:      sessionID,
 		WorkDir:        workDir,
 		Role:           "librarian",
@@ -211,42 +202,23 @@ func runLibrarianStart(cmd *cobra.Command, args []string) error {
 		AgentName:      "librarian",
 		AgentOverride:  librarianAgentOverride,
 		ExtraEnv:       extraEnv,
+		Theme:          &theme,
 		WaitForAgent:   true,
 		WaitFatal:      true,
 		AcceptBypass:   true,
 		ReadyDelay:     true,
+		AutoRespawn:    true,
 		TrackPID:       true,
 		VerifySurvived: true,
-	}
-
-	if librarianTask != "" {
-		if cfg.ExtraEnv == nil {
-			cfg.ExtraEnv = make(map[string]string)
-		}
-		cfg.ExtraEnv["GT_LIBRARIAN_TASK"] = librarianTask
-		cfg.Beacon = session.BeaconConfig{
-			Recipient: session.BeaconRecipient("librarian", "", rigName),
-			Sender:    "mayor",
-			Topic:     "task",
-		}
-		cfg.Instructions = librarianTask
-	}
-
-	theme := tmux.AssignTheme(rigName)
-	cfg.Theme = &theme
-
-	_, err = session.StartSession(t, cfg)
+	})
 	if err != nil {
 		return fmt.Errorf("starting librarian: %w", err)
 	}
 
 	fmt.Printf("%s Librarian started for %s\n", style.Bold.Render("✓"), rigName)
-	if librarianTask != "" {
-		fmt.Printf("  %s\n", style.Dim.Render("Task: "+librarianTask))
-		fmt.Printf("  %s\n", style.Dim.Render("Librarian will exit when task is complete"))
-	}
 	fmt.Printf("  %s\n", style.Dim.Render("Use 'gt librarian attach' to connect"))
 	fmt.Printf("  %s\n", style.Dim.Render("Use 'gt librarian status' to check status"))
+	fmt.Printf("  %s\n", style.Dim.Render("In session, run 'gt prime' first"))
 	return nil
 }
 
