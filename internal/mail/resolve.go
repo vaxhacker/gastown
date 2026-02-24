@@ -18,6 +18,7 @@ import (
 
 	"github.com/steveyegge/gastown/internal/beads"
 	"github.com/steveyegge/gastown/internal/config"
+	"github.com/steveyegge/gastown/internal/session"
 )
 
 // ErrUnknownRecipient indicates the address does not match any known agent.
@@ -481,13 +482,24 @@ func AgentBeadIDToAddress(id string) string {
 
 	if len(parts) == 1 {
 		// Town-level: gt-mayor → mayor/
-		return parts[0] + "/"
+		role := parts[0]
+		if role == "mayor" || role == "deacon" {
+			return role + "/"
+		}
+		// Collapsed rig singletons: <prefix>-<role>
+		// e.g., cm-librarian -> cmtestsuite/librarian
+		if role == "witness" || role == "refinery" || role == "librarian" {
+			prefix := strings.SplitN(id, "-", 2)[0]
+			rig := session.DefaultRegistry().RigForPrefix(prefix)
+			return rig + "/" + role
+		}
+		return ""
 	}
 
 	// Scan from right for known role markers
 	for i := len(parts) - 1; i >= 1; i-- {
 		switch parts[i] {
-		case constants.RoleWitness, constants.RoleRefinery:
+		case constants.RoleWitness, constants.RoleRefinery, "librarian":
 			// Singleton role: rig is everything before the role
 			rig := strings.Join(parts[:i], "-")
 			return rig + "/" + parts[i]
