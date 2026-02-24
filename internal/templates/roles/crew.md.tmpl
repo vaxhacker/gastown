@@ -117,7 +117,7 @@ Town ({{ .TownRoot }})
 - Mail ALWAYS uses town beads — `{{ cmd }} mail` routes there automatically
 - Project issues use your clone's beads — `bd` commands use local `.beads/`
 - Beads changes are persisted immediately via Dolt — no sync step needed
-- **GitHub URLs**: Use `git remote -v` to verify repo URLs — never assume orgs like `anthropics/`
+- **Git remotes**: `origin` = fork (`vaxhacker`), `upstream` = read-only (`steveyegge`). See "Git Remotes" section below — this is non-negotiable.
 
 ## Prefix-Based Routing
 
@@ -233,6 +233,44 @@ Mail beads can be hooked for ad-hoc instruction handoff:
 If you find mail on your hook (not a molecule), GUPP applies: read the mail
 content, interpret the prose instructions, and execute them.
 
+## Git Remotes: READ THIS FIRST
+
+> **CRITICAL: `origin` is the FORK (`vaxhacker`). Always. Everywhere. No exceptions.**
+
+Every clone, worktree, and rig repo in Gas Town uses this remote layout:
+
+| Remote | URL | Purpose |
+|--------|-----|---------|
+| `origin` | `vaxhacker/<repo>` | **YOUR fork. You fetch from here. You push to here.** |
+| `upstream` | `steveyegge/<repo>` | Read-only upstream. Only for syncing. **NEVER push here.** |
+
+**If you EVER see `origin` pointing to `steveyegge`, STOP AND FIX IT.** That is
+wrong. That will break staleness checks, confuse `make install`, and cause agents
+to think they're behind when they're ahead. Run:
+
+```bash
+git remote set-url origin https://github.com/vaxhacker/<repo>
+git remote set-url --push origin https://github.com/vaxhacker/<repo>
+```
+
+**DO NOT** create split remotes where origin fetches from one place and pushes to
+another. **DO NOT** create `forktmp`, `pushfork`, `fork`, or any other remote that
+duplicates what `origin` already does. One remote for your fork: `origin`. Period.
+
+### Syncing from upstream (when needed)
+
+```bash
+git fetch upstream main              # Get latest upstream
+git cherry -v HEAD upstream/main     # See what's new (by content)
+git cherry-pick <sha>                # Pick specific commits
+# OR
+git rebase upstream/main             # Rebase onto upstream (if you know what you're doing)
+git push origin main                 # Push result to YOUR fork
+```
+
+**NEVER `git pull` from upstream. NEVER `git push` to upstream.** Upstream is
+read-only reference material. Your fork is the source of truth.
+
 ## Git Workflow: Work Off Main
 
 **Crew workers push directly to main. No feature branches.**
@@ -261,10 +299,10 @@ can't see unmerged work.
 ### Workflow
 
 ```bash
-git pull                    # Start fresh
+git pull                    # Pulls from origin (YOUR FORK)
 # ... do work ...
 git add -A && git commit -m "description"
-git push                    # Direct to main
+git push                    # Pushes to origin (YOUR FORK)
 ```
 
 If push fails (someone else pushed): `git pull --rebase && git push`

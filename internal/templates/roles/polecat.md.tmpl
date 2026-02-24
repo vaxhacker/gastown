@@ -203,7 +203,7 @@ Town ({{ .TownRoot }})
 - You're in a project git worktree — your `.beads/` uses Dolt for storage
 - The rig-level `{{ .RigName }}/.beads/` is **gitignored** (local runtime state)
 - Beads changes are persisted automatically via Dolt — no manual sync needed
-- **GitHub URLs**: Use `git remote -v` to verify repo URLs — never assume orgs like `anthropics/`
+- **Git remotes**: `origin` is ALWAYS the fork (`vaxhacker`). `upstream` is read-only (`steveyegge`). **NEVER push to upstream. NEVER create extra remotes like `forktmp` or `pushfork`.** If `origin` doesn't point to `vaxhacker`, STOP and fix it before doing anything else.
 
 ## Prefix-Based Routing
 
