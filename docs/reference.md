@@ -596,6 +596,23 @@ bd close <id>
 bd dep add <child> <parent>  # child depends on parent
 ```
 
+## Command Usage Tips
+
+- **Rig inference** – `gt` commands guess the target rig from the current working directory or spin-up environment (`GT_RIG`, `GT_ROLE`). When you’re outside a rig tree (e.g., `~/gt`) pass `--rig <name>` explicitly (`gt mayor start --rig gastown`), or change directories to the rig root before running gt. `gt rig status` shows both the detected rig and whether a witness/refinery is in the cache; if you pulled from a different repo or your shell lost `GT_RIG`, rerun from the rig directory so the inferred context matches the `role_agents` settings.
+- **Agent override** – `--agent <alias>` replaces the runtime that would otherwise be resolved from `role_agents`, town/rig defaults, or the built-in Claude preset. Use it on commands like `gt start`, `gt mayor start`, `gt witness start`, `gt crew <name>`, and `gt refinery start` when experimenting with codex/gemini. After the run, `gt status` (or `gt rig status <name>`) shows `agent_alias`/`agent_info` so you can confirm which runtime actually booted. If the override fails, the command logs `Error: agent '<alias>' not found` so check `gt config agent list` before retrying.
+- **bd actor context** – `bd` infers the actor from `GT_ROLE`/`BD_ACTOR`, or from your cwd when you’re inside a rig/role directory. Scripts should export `BD_ACTOR=gastown/crew/gus` or run `cd gastown/crew/gus && bd ready` so the beads backend knows whose queue you’re working. Without that, `bd create` might attribute work to the wrong agent and cause follow-on confusion about assignments or ready lists.
+- **Beads DB health** – `bd ready` (`bd list`, `bd show`) expects a healthy `.beads` directory. If you see “Error: no beads database found” or “database locked,” verify you’re under the right rig root, run `bd sync` once to fix a stale lock, and fall back to `bd init`/`bd config` only if nothing else works. Don’t delete `beads/` while sessions are running—we need consistent history for patrol agents.
+- **Testing and verification** – For any automation-heavy change, iterate:
+  1. Run `gt status --fast` to ensure each agent has the right runtime alias (look at `agent_alias` and `agent_info`, plus the `runtime_drift` warning if it ever appears).
+  2. Use `gt rig status <name>` to confirm witness/refinery/witness are running (record `session: gt-witness/gastown` etc.).
+  3. If runtime or rig inference still feels flaky, open a `gt` bead and note the exact command plus `GT_RIG`/`GT_ROLE`/`BD_ACTOR` values—this helps the mayor/deacon triage the failure without guessing.
+- **Avoiding mistakes** – When a `gt` command fails with “already running,” attach (`gt <role> attach`) instead of restarting; for `bd` commands always check `bd show` before mutating the same issue. If you’re scripting, wrap `gt` calls in `set -e`/`gt status` post-check to make sure the expected sessions exist, re-running `bd ready` after the fact to confirm nothing shifted in the queue.
+- **Rig inference** – `gt` commands guess the target rig from the current working directory or the `GT_RIG` environment variable. Pass `--rig <name>` explicitly when working outside the rig tree (`gt mayor start --rig gastown`).
+- **Agent override** – `--agent <alias>` replaces the resolved runtime for contacts like `gt start`, `gt mayor start`, `gt witness start`, and `gt crew <name>`. Use it for experiments (e.g., `gt mayor start --agent codex`), but most production flows expect Claude by default; view the remaining runtime with `gt status` (see the agent table for `agent_alias` and `agent_info`).
+- **bd actor context** – `bd` reads `GT_ROLE`, `BD_ACTOR`, or the current directory to determine who is speaking. When scripting or running from an automation shell, set `BD_ACTOR` explicitly (`BD_ACTOR=gastown/witness bd ready`) so you land in the right queue.
+- **Touchpoints** – Always confirm your `.beads` directory is correct (`bd ready` will warn if it can’t find a database). Use `bd show <id>` to check existing metadata before reassigning staff and lean on `bd update <id> --notes` to log the change.
+- **Avoiding mistakes** – For every `gt sling` or `gt start` command that fails, rerun `gt status` and `gt rig status <name>` to verify agent health and role assignment. When hitting ambiguous errors, inspect `gt config role_agents` plus `gt mail identity` to make sure the actor you think you are matches the `GT_ROLE` recorded by the system.
+
 ## Patrol Agents
 
 Deacon, Witness, and Refinery run continuous patrol loops using wisps:
