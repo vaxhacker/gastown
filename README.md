@@ -177,6 +177,36 @@ gt convoy list
 gt agents
 ```
 
+## Working with Forks and Upstream
+
+If you forked Gas Town you must keep your fork in sync with the upstream `main` branch. Follow this workflow so everyone pushes against their own remotes, not the upstream repo:
+
+1. **Verify your remotes.** Your personal fork should be the `origin` remote (`git remote -v`). Add the upstream repo if it is missing:
+   ```bash
+   git remote add upstream https://github.com/vaxhacker/gastown
+   ```
+2. **Fetch upstream updates before you start work.**
+   ```bash
+   git fetch upstream
+   git checkout main
+   git reset --hard upstream/main
+   ```
+   This ensures your local `main` matches the latest upstream state before branching.
+3. **Create topic branches from your forked `main`.** Always branch off the freshly synced `main` (e.g., `git checkout -b mayor-docs upstream/main`).
+4. **Rebase onto upstream before pushing.** If upstream advanced while you were working, rebase instead of merge:
+   ```bash
+   git fetch upstream
+   git rebase upstream/main
+   ```
+5. **Push only to your fork.** Your `origin` remote must stay your personal fork. Push your topic branch there:
+   ```bash
+   git push origin mayor-docs
+   ```
+   Never push directly to `vaxhacker/gastown` unless you have explicit permission.
+6. **Reset if you accidentally commit to the wrong remote.** Use `git remote set-url origin <your fork>` and force-push the correct branch. Keeping a clean history prevents agents from confusing your fork with the upstream mainline.
+
+Setting up this workflow prevents cascades where agents fetch from the upstream `main` and then push divergent commits back into that repository. If you hit conflicts during rebase, resolve them in your local branch and push the rebased result to your fork; do not push conflicting changes directly to upstream.
+
 ## Common Workflows
 
 ### Mayor Workflow (Recommended)
