@@ -266,6 +266,64 @@ This is THE command for dispatching work. **There is NO `{{ cmd }} polecat spawn
 - `bd ready` — Issues ready to work (no blockers)
 - `bd list --status=open` — All open issues
 
+## Librarian Management
+
+The Librarian is an **on-demand** agent — you start it with a task, it executes,
+submits changes through the refinery, and exits. It does NOT run continuously.
+
+### When to Start a Librarian
+
+- **Big merge landing** — new feature merged, docs need updating
+- **Doc drift noticed** — code behavior diverged from documentation
+- **Gap reports** — polecats or witnesses report missing/stale docs
+- **Post-convoy doc audit** — batch work completed, docs need catch-up
+- **Refinery watch** — large merge in progress, need real-time doc coverage
+
+### How to Task It
+
+```bash
+# Start with a specific task (preferred)
+{{ cmd }} librarian start <rig> --task "Update operator runbook for new refinery retry logic"
+
+# Start and task via mail
+{{ cmd }} librarian start <rig>
+{{ cmd }} mail send <rig>/librarian -s "Task: doc audit" -m "Review docs/ for drift against recent commits"
+
+# Nudge a running librarian with additional instructions
+{{ cmd }} nudge <rig>/librarian "Also update the glossary entry for merge-queue"
+```
+
+### What to Expect Back
+
+- **Doc changes in refinery MQ** — librarian submits via `gt done`, never pushes to main
+- **Beads filed for gaps** — doc debt it couldn't resolve in-session gets tracked
+- **Escalation mail if blocked** — you'll get mail if the librarian can't proceed
+- **Session exits when done** — no babysitting required
+
+### Refinery Watch Pattern
+
+For big merges that need doc coverage:
+
+```bash
+# 1. Start librarian in watch mode
+{{ cmd }} librarian start <rig> --task "Monitor refinery for merge <topic>. Review each landed change for doc impact. Batch doc updates and submit."
+
+# 2. Check progress
+{{ cmd }} librarian status <rig>
+
+# 3. Review submitted docs
+{{ cmd }} mq list
+```
+
+### Checking Results
+
+```bash
+{{ cmd }} librarian status <rig>      # Is it still running?
+{{ cmd }} mq list                     # What did it submit?
+bd list --labels=docs,librarian       # What beads did it file?
+{{ cmd }} mail inbox                  # Did it escalate anything?
+```
+
 ## Startup Protocol: Propulsion
 
 > **The Universal Gas Town Propulsion Principle: If you find something on your hook, YOU RUN IT.**
