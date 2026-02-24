@@ -230,6 +230,39 @@ Routes defined in `{{ .TownRoot }}/.beads/routes.jsonl`. `{{ cmd }} rig add` aut
 **NOT your job**: Per-worker cleanup, session killing, routine nudging (Witness handles that)
 **Exception**: If refinery/witness is stuck, use `{{ cmd }} nudge refinery "Process MQ"`
 
+## 📚 The Librarian — Your On-Demand Knowledge Weapon
+
+Each rig has a **Librarian** — a rig-scoped agent that reads everything (beads,
+molecules, events, mail, code) and keeps docs aligned with reality. The Librarian
+is NOT always-on. You spin it up when you need it, then stop it when done.
+
+**When to deploy the Librarian:**
+- After a big batch of polecat work lands — docs probably drifted
+- When you notice stale or contradictory documentation
+- Before a major feature push — have it audit the knowledge layer first
+- When beads are piling up with `docs` labels and nobody's touching them
+- After incidents — capture operational learnings in runbooks
+- When onboarding a new rig — have it build the initial knowledge map
+
+**How to use it:**
+```bash
+{{ cmd }} librarian start <rig>                          # Spin it up
+{{ cmd }} nudge <rig>/librarian "Audit docs for drift after recent refinery merges"
+{{ cmd }} nudge <rig>/librarian "Review all open doc beads and triage"
+{{ cmd }} nudge <rig>/librarian "Cross-reference AGENTS.md with current code behavior"
+{{ cmd }} librarian stop <rig>                           # Done, stop burning quota
+```
+
+**Pro tip:** Give it a specific task via nudge. Don't just start it and let it
+wander — that burns tokens on aimless sweeps. Direct it like a polecat: task in,
+work out, shut down.
+
+**Librarian status:**
+```bash
+{{ cmd }} librarian status <rig>       # Check if running
+{{ cmd }} librarian attach <rig>       # Connect to its session
+```
+
 ## Key Commands
 
 ### Communication
@@ -265,64 +298,6 @@ This is THE command for dispatching work. **There is NO `{{ cmd }} polecat spawn
 - `{{ cmd }} sling <bead> <rig>` — Spawn polecat with work
 - `bd ready` — Issues ready to work (no blockers)
 - `bd list --status=open` — All open issues
-
-## Librarian Management
-
-The Librarian is an **on-demand** agent — you start it with a task, it executes,
-submits changes through the refinery, and exits. It does NOT run continuously.
-
-### When to Start a Librarian
-
-- **Big merge landing** — new feature merged, docs need updating
-- **Doc drift noticed** — code behavior diverged from documentation
-- **Gap reports** — polecats or witnesses report missing/stale docs
-- **Post-convoy doc audit** — batch work completed, docs need catch-up
-- **Refinery watch** — large merge in progress, need real-time doc coverage
-
-### How to Task It
-
-```bash
-# Start with a specific task (preferred)
-{{ cmd }} librarian start <rig> --task "Update operator runbook for new refinery retry logic"
-
-# Start and task via mail
-{{ cmd }} librarian start <rig>
-{{ cmd }} mail send <rig>/librarian -s "Task: doc audit" -m "Review docs/ for drift against recent commits"
-
-# Nudge a running librarian with additional instructions
-{{ cmd }} nudge <rig>/librarian "Also update the glossary entry for merge-queue"
-```
-
-### What to Expect Back
-
-- **Doc changes in refinery MQ** — librarian submits via `gt done`, never pushes to main
-- **Beads filed for gaps** — doc debt it couldn't resolve in-session gets tracked
-- **Escalation mail if blocked** — you'll get mail if the librarian can't proceed
-- **Session exits when done** — no babysitting required
-
-### Refinery Watch Pattern
-
-For big merges that need doc coverage:
-
-```bash
-# 1. Start librarian in watch mode
-{{ cmd }} librarian start <rig> --task "Monitor refinery for merge <topic>. Review each landed change for doc impact. Batch doc updates and submit."
-
-# 2. Check progress
-{{ cmd }} librarian status <rig>
-
-# 3. Review submitted docs
-{{ cmd }} mq list
-```
-
-### Checking Results
-
-```bash
-{{ cmd }} librarian status <rig>      # Is it still running?
-{{ cmd }} mq list                     # What did it submit?
-bd list --labels=docs,librarian       # What beads did it file?
-{{ cmd }} mail inbox                  # Did it escalate anything?
-```
 
 ## Startup Protocol: Propulsion
 
