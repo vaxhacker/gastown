@@ -23,6 +23,12 @@ func DeaconSessionName() string {
 	return HQPrefix + "deacon"
 }
 
+// LibrarianSessionName returns the session name for a rig's Librarian agent.
+// rigPrefix is the rig's beads prefix (e.g., "gt" for gastown, "bd" for beads).
+func LibrarianSessionName(rigPrefix string) string {
+	return fmt.Sprintf("%s-librarian", rigPrefix)
+}
+
 // WitnessSessionName returns the session name for a rig's Witness agent.
 // rigPrefix is the rig's beads prefix (e.g., "gt" for gastown, "bd" for beads).
 func WitnessSessionName(rigPrefix string) string {

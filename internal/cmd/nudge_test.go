@@ -47,6 +47,7 @@ func TestResolveNudgePattern(t *testing.T) {
 	agents := []*AgentSession{
 		{Name: "hq-mayor", Type: AgentMayor},
 		{Name: "hq-deacon", Type: AgentDeacon},
+		{Name: "gt-librarian", Type: AgentLibrarian, Rig: "gastown"},
 		{Name: "gt-witness", Type: AgentWitness, Rig: "gastown"},
 		{Name: "gt-refinery", Type: AgentRefinery, Rig: "gastown"},
 		{Name: "gt-crew-max", Type: AgentCrew, Rig: "gastown", AgentName: "max"},
@@ -73,9 +74,19 @@ func TestResolveNudgePattern(t *testing.T) {
 			expected: []string{"hq-deacon"},
 		},
 		{
+			name:     "specific librarian",
+			pattern:  "gastown/librarian",
+			expected: []string{"gt-librarian"},
+		},
+		{
 			name:     "specific witness",
 			pattern:  "gastown/witness",
 			expected: []string{"gt-witness"},
+		},
+		{
+			name:     "all librarians",
+			pattern:  "*/librarian",
+			expected: []string{"gt-librarian"},
 		},
 		{
 			name:     "all witnesses",
@@ -177,6 +188,11 @@ func TestSessionNameToAddress(t *testing.T) {
 			expected:    "gastown/refinery",
 		},
 		{
+			name:        "librarian",
+			sessionName: "gt-librarian",
+			expected:    "gastown/librarian",
+		},
+		{
 			name:        "crew member",
 			sessionName: "gt-crew-max",
 			expected:    "gastown/crew/max",
@@ -225,9 +241,9 @@ func TestNudgeInvalidMode(t *testing.T) {
 	nudgeMessageFlag = "test"
 
 	tests := []struct {
-		name     string
-		mode     string
-		wantErr  string
+		name    string
+		mode    string
+		wantErr string
 	}{
 		{"bogus mode", "bogus", `invalid --mode "bogus"`},
 		{"empty mode", "", `invalid --mode ""`},

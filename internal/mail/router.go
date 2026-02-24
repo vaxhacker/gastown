@@ -334,7 +334,6 @@ func agentBeadToAddress(bead *agentBead) string {
 		if id == "hq-deacon" {
 			return "deacon/"
 		}
-
 		// For other hq- agents, fall back to description parsing
 		return parseAgentAddressFromDescription(bead.Description)
 	}
@@ -1661,6 +1660,8 @@ func addressToAgentBeadID(address string) string {
 	rigPrefix := session.PrefixFor(rig)
 
 	switch {
+	case target == "librarian":
+		return session.LibrarianSessionName(rigPrefix)
 	case target == constants.RoleWitness:
 		return session.WitnessSessionName(rigPrefix)
 	case target == constants.RoleRefinery:
@@ -1721,6 +1722,9 @@ func AddressToSessionIDs(address string) []string {
 	}
 
 	// Special cases that don't need crew variant
+	if target == "librarian" {
+		return []string{session.LibrarianSessionName(rigPrefix)}
+	}
 	if target == constants.RoleWitness {
 		return []string{session.WitnessSessionName(rigPrefix)}
 	}
@@ -1737,4 +1741,3 @@ func AddressToSessionIDs(address string) []string {
 		session.PolecatSessionName(rigPrefix, target), // <prefix>-name
 	}
 }
-

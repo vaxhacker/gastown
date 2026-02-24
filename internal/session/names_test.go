@@ -22,6 +22,14 @@ func TestDeaconSessionName(t *testing.T) {
 	}
 }
 
+func TestLibrarianSessionName(t *testing.T) {
+	want := "gt-librarian"
+	got := LibrarianSessionName("gt")
+	if got != want {
+		t.Errorf("LibrarianSessionName(\"gt\") = %q, want %q", got, want)
+	}
+}
+
 func TestOverseerSessionName(t *testing.T) {
 	want := "hq-overseer"
 	got := OverseerSessionName()

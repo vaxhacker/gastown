@@ -24,6 +24,7 @@ type AgentType int
 const (
 	AgentMayor AgentType = iota
 	AgentDeacon
+	AgentLibrarian
 	AgentWitness
 	AgentRefinery
 	AgentCrew
@@ -43,33 +44,36 @@ type AgentSession struct {
 
 // AgentTypeColors maps agent types to tmux color codes.
 var AgentTypeColors = map[AgentType]string{
-	AgentMayor:    "#[fg=red,bold]",
-	AgentDeacon:   "#[fg=yellow,bold]",
-	AgentWitness:  "#[fg=cyan]",
-	AgentRefinery: "#[fg=blue]",
-	AgentCrew:     "#[fg=green]",
-	AgentPolecat:  "#[fg=white,dim]",
-	AgentPersonal: "#[fg=magenta]",
-	AgentTest:     "#[fg=yellow,dim]",
+	AgentMayor:     "#[fg=red,bold]",
+	AgentDeacon:    "#[fg=yellow,bold]",
+	AgentLibrarian: "#[fg=magenta]",
+	AgentWitness:   "#[fg=cyan]",
+	AgentRefinery:  "#[fg=blue]",
+	AgentCrew:      "#[fg=green]",
+	AgentPolecat:   "#[fg=white,dim]",
+	AgentPersonal:  "#[fg=magenta]",
+	AgentTest:      "#[fg=yellow,dim]",
 }
 
 // rigTypeOrder defines the display order of rig-level agent types.
 var rigTypeOrder = map[AgentType]int{
-	AgentRefinery: 0,
-	AgentWitness:  1,
-	AgentCrew:     2,
-	AgentPolecat:  3,
+	AgentRefinery:  0,
+	AgentLibrarian: 1,
+	AgentWitness:   2,
+	AgentCrew:      3,
+	AgentPolecat:   4,
 }
 
 // AgentTypeIcons maps agent types to display icons.
 // Uses centralized emojis from constants package.
 var AgentTypeIcons = map[AgentType]string{
-	AgentMayor:    constants.EmojiMayor,
-	AgentDeacon:   constants.EmojiDeacon,
-	AgentWitness:  constants.EmojiWitness,
-	AgentRefinery: constants.EmojiRefinery,
-	AgentCrew:     constants.EmojiCrew,
-	AgentPolecat:  constants.EmojiPolecat,
+	AgentMayor:     constants.EmojiMayor,
+	AgentDeacon:    constants.EmojiDeacon,
+	AgentLibrarian: constants.EmojiWitness,
+	AgentWitness:   constants.EmojiWitness,
+	AgentRefinery:  constants.EmojiRefinery,
+	AgentCrew:      constants.EmojiCrew,
+	AgentPolecat:   constants.EmojiPolecat,
 }
 
 var agentsCmd = &cobra.Command{
@@ -79,7 +83,7 @@ var agentsCmd = &cobra.Command{
 	Short:   "List Gas Town agent sessions",
 	Long: `List Gas Town agent sessions to stdout.
 
-Shows Mayor, Deacon, Witnesses, Refineries, and Crew workers.
+Shows Mayor, Deacon, Librarians, Witnesses, Refineries, and Crew workers.
 Polecats are hidden (use 'gt polecat list' to see them).
 
 Use 'gt agents menu' for an interactive tmux popup menu.`,
@@ -164,6 +168,8 @@ func categorizeSession(name string) *AgentSession {
 		sess.Type = AgentMayor
 	case session.RoleDeacon:
 		sess.Type = AgentDeacon
+	case session.RoleLibrarian:
+		sess.Type = AgentLibrarian
 	case session.RoleWitness:
 		sess.Type = AgentWitness
 	case session.RoleRefinery:
@@ -347,7 +353,7 @@ func filterAndSortSessions(sessionNames []string, includePolecats bool) []*Agent
 			return a.Rig < b.Rig
 		}
 
-		// Within rig: refinery, witness, crew, polecat
+		// Within rig: refinery, librarian, witness, crew, polecat
 		if rigTypeOrder[a.Type] != rigTypeOrder[b.Type] {
 			return rigTypeOrder[a.Type] < rigTypeOrder[b.Type]
 		}
@@ -380,6 +386,8 @@ func (a *AgentSession) displayLabel() string {
 		return fmt.Sprintf("%s%s Mayor#[default]", color, icon)
 	case AgentDeacon:
 		return fmt.Sprintf("%s%s Deacon#[default]", color, icon)
+	case AgentLibrarian:
+		return fmt.Sprintf("%s%s %s/librarian#[default]", color, icon, a.Rig)
 	case AgentWitness:
 		return fmt.Sprintf("%s%s %s/witness#[default]", color, icon, a.Rig)
 	case AgentRefinery:
@@ -565,6 +573,8 @@ func runAgentsList(cmd *cobra.Command, args []string) error {
 			fmt.Printf("  %s Mayor\n", icon)
 		case AgentDeacon:
 			fmt.Printf("  %s Deacon\n", icon)
+		case AgentLibrarian:
+			fmt.Printf("  %s librarian\n", icon)
 		case AgentWitness:
 			fmt.Printf("  %s witness\n", icon)
 		case AgentRefinery:

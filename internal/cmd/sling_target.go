@@ -68,6 +68,8 @@ func resolveSelfTarget() (agentID string, pane string, hookRoot string, err erro
 		agentID = "mayor/"
 	case RoleDeacon:
 		agentID = "deacon/"
+	case RoleLibrarian:
+		agentID = fmt.Sprintf("%s/librarian", roleInfo.Rig)
 	case RoleBoot:
 		agentID = "deacon/boot"
 	case RoleWitness:
@@ -97,12 +99,12 @@ func resolveSelfTarget() (agentID string, pane string, hookRoot string, err erro
 
 // ResolveTargetOptions controls target resolution behavior.
 type ResolveTargetOptions struct {
-	DryRun   bool
-	Force    bool
-	Create   bool
-	Account  string
-	Agent    string
-	NoBoot   bool
+	DryRun     bool
+	Force      bool
+	Create     bool
+	Account    string
+	Agent      string
+	NoBoot     bool
 	HookBead   string // Bead ID to set atomically during polecat spawn (empty = skip)
 	BeadID     string // For cross-rig guard checks (empty = skip guard)
 	TownRoot   string

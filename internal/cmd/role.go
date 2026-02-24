@@ -208,7 +208,7 @@ func GetRoleWithContext(cwd, townRoot string) (RoleInfo, error) {
 
 		// If env is incomplete (missing rig/polecat for roles that need them),
 		// fill gaps from cwd detection and mark as incomplete
-		needsRig := parsedRole == RoleWitness || parsedRole == RoleRefinery || parsedRole == RolePolecat || parsedRole == RoleCrew
+		needsRig := parsedRole == RoleLibrarian || parsedRole == RoleWitness || parsedRole == RoleRefinery || parsedRole == RolePolecat || parsedRole == RoleCrew
 		needsPolecat := parsedRole == RolePolecat || parsedRole == RoleCrew || parsedRole == RoleDog
 
 		if needsRig && info.Rig == "" && cwdCtx.Rig != "" {
@@ -291,12 +291,6 @@ func detectRole(cwd, townRoot string) RoleInfo {
 		return ctx
 	}
 
-	// Check for librarian role: librarian/
-	if len(parts) >= 1 && parts[0] == "librarian" {
-		ctx.Role = RoleLibrarian
-		return ctx
-	}
-
 	// At this point, first part should be a rig name
 	if len(parts) < 1 {
 		return ctx
@@ -319,6 +313,12 @@ func detectRole(cwd, townRoot string) RoleInfo {
 	// Check for refinery: <rig>/refinery/rig/
 	if len(parts) >= 2 && parts[1] == "refinery" {
 		ctx.Role = RoleRefinery
+		return ctx
+	}
+
+	// Check for librarian: <rig>/librarian/
+	if len(parts) >= 2 && parts[1] == "librarian" {
+		ctx.Role = RoleLibrarian
 		return ctx
 	}
 
@@ -350,8 +350,6 @@ func parseRoleString(s string) (Role, string, string) {
 		return RoleMayor, "", ""
 	case constants.RoleDeacon:
 		return RoleDeacon, "", ""
-	case "librarian":
-		return RoleLibrarian, "", ""
 	case "boot":
 		return RoleBoot, "", ""
 	case "dog":
@@ -378,6 +376,8 @@ func parseRoleString(s string) (Role, string, string) {
 		return RoleWitness, rig, ""
 	case constants.RoleRefinery:
 		return RoleRefinery, rig, ""
+	case "librarian":
+		return RoleLibrarian, rig, ""
 	case "polecats":
 		if len(parts) >= 3 {
 			return RolePolecat, rig, parts[2]
@@ -407,7 +407,10 @@ func (info RoleInfo) ActorString() string {
 	case RoleDeacon:
 		return "deacon"
 	case RoleLibrarian:
-		return "librarian"
+		if info.Rig != "" {
+			return fmt.Sprintf("%s/librarian", info.Rig)
+		}
+		return ""
 	case RoleWitness:
 		if info.Rig != "" {
 			return fmt.Sprintf("%s/witness", info.Rig)
@@ -443,7 +446,10 @@ func getRoleHome(role Role, rig, polecat, townRoot string) string {
 	case RoleDeacon:
 		return filepath.Join(townRoot, "deacon")
 	case RoleLibrarian:
-		return filepath.Join(townRoot, "librarian")
+		if rig == "" {
+			return ""
+		}
+		return filepath.Join(townRoot, rig, "librarian")
 	case RoleWitness:
 		if rig == "" {
 			return ""
@@ -613,7 +619,7 @@ func runRoleList(cmd *cobra.Command, args []string) error {
 	}{
 		{RoleMayor, "Global coordinator at mayor/"},
 		{RoleDeacon, "Background supervisor daemon"},
-		{RoleLibrarian, "Town-level docs and knowledge operations specialist"},
+		{RoleLibrarian, "Per-rig docs and knowledge operations specialist"},
 		{RoleWitness, "Per-rig polecat lifecycle manager"},
 		{RoleRefinery, "Per-rig merge queue processor"},
 		{RolePolecat, "Worker with persistent identity, ephemeral sessions"},

@@ -61,7 +61,7 @@ var nudgeCmd = &cobra.Command{
 	Long: `Universal messaging API for Gas Town worker-to-worker communication.
 
 Delivers a message to any worker's Claude Code session: polecats, crew,
-witness, refinery, mayor, or deacon.
+witness, refinery, mayor, deacon, or librarian.
 
 Delivery modes (--mode):
   immediate  Send directly via tmux send-keys (default). Interrupts in-flight
@@ -82,10 +82,11 @@ This is the ONLY way to send messages to Claude sessions.
 Do not use raw tmux send-keys elsewhere.
 
 Role shortcuts (expand to session names):
-  mayor     Maps to gt-mayor
-  deacon    Maps to gt-deacon
-  witness   Maps to gt-<rig>-witness (uses current rig)
-  refinery  Maps to gt-<rig>-refinery (uses current rig)
+  mayor      Maps to hq-mayor
+  deacon     Maps to hq-deacon
+  librarian  Maps to gt-<rig>-librarian (uses current rig)
+  witness    Maps to gt-<rig>-witness (uses current rig)
+  refinery   Maps to gt-<rig>-refinery (uses current rig)
 
 Channel syntax:
   channel:<name>  Nudges all members of a named channel defined in
@@ -102,6 +103,7 @@ Examples:
   gt nudge mayor "Status update requested"
   gt nudge witness "Check polecat health"
   gt nudge deacon session-started
+  gt nudge librarian "Please groom docs backlog"
   gt nudge channel:workers "New priority work available"
 
   # Use --stdin for messages with special characters or formatting:
@@ -295,7 +297,7 @@ func runNudge(cmd *cobra.Command, args []string) (retErr error) {
 	switch target {
 	case constants.RoleMayor:
 		target = session.MayorSessionName()
-	case constants.RoleWitness, constants.RoleRefinery:
+	case constants.RoleWitness, constants.RoleRefinery, "librarian":
 		// These need the current rig
 		roleInfo, err := GetRole()
 		if err != nil {
@@ -307,36 +309,42 @@ func runNudge(cmd *cobra.Command, args []string) (retErr error) {
 		rigPrefix := session.PrefixFor(roleInfo.Rig)
 		if target == constants.RoleWitness {
 			target = session.WitnessSessionName(rigPrefix)
+		} else if target == "librarian" {
+			target = session.LibrarianSessionName(rigPrefix)
 		} else {
 			target = session.RefinerySessionName(rigPrefix)
 		}
 	}
 
-	// Special case: "deacon" target maps to the Deacon session
+	// Special case: town-level singleton targets.
 	if target == constants.RoleDeacon {
-		deaconSession := session.DeaconSessionName()
-		// Check if Deacon session exists
-		exists, err := t.HasSession(deaconSession)
+		targetName := target
+		targetSession := session.DeaconSessionName()
+
+		displayName := targetName
+		if len(displayName) > 0 {
+			displayName = strings.ToUpper(displayName[:1]) + displayName[1:]
+		}
+
+		exists, err := t.HasSession(targetSession)
 		if err != nil {
-			return fmt.Errorf("checking deacon session: %w", err)
+			return fmt.Errorf("checking %s session: %w", targetName, err)
 		}
 		if !exists {
-			// Deacon not running - this is not an error, just log and return
-			fmt.Printf("%s Deacon not running, nudge skipped\n", style.Dim.Render("○"))
+			fmt.Printf("%s %s not running, nudge skipped\n", style.Dim.Render("○"), displayName)
 			return nil
 		}
 
-		if err := deliverNudge(t, deaconSession, message, sender); err != nil {
-			return fmt.Errorf("nudging deacon: %w", err)
+		if err := deliverNudge(t, targetSession, message, sender); err != nil {
+			return fmt.Errorf("nudging %s: %w", targetName, err)
 		}
 
-		fmt.Printf("%s Nudged deacon (%s)\n", style.Bold.Render("✓"), nudgeModeFlag)
+		fmt.Printf("%s Nudged %s (%s)\n", style.Bold.Render("✓"), targetName, nudgeModeFlag)
 
-		// Log nudge event
 		if townRoot, err := workspace.FindFromCwd(); err == nil && townRoot != "" {
-			_ = LogNudge(townRoot, constants.RoleDeacon, message)
+			_ = LogNudge(townRoot, targetName, message)
 		}
-		_ = events.LogFeed(events.TypeNudge, sender, events.NudgePayload("", constants.RoleDeacon, message))
+		_ = events.LogFeed(events.TypeNudge, sender, events.NudgePayload("", targetName, message))
 		return nil
 	}
 
@@ -546,8 +554,7 @@ func runNudgeChannel(channelName, message, sender string) error {
 //   - Literal: "gastown/witness" → gt-gastown-witness
 //   - Wildcard: "gastown/polecats/*" → all polecat sessions in gastown
 //   - Role: "*/witness" → all witness sessions
-//   - Special: "mayor", "deacon" → gt-{town}-mayor, gt-{town}-deacon
-// townName is used to generate the correct session names for mayor/deacon.
+//   - Special: "mayor", "deacon" → hq-mayor, hq-deacon
 func resolveNudgePattern(pattern string, agents []*AgentSession) []string {
 	var results []string
 
@@ -596,6 +603,10 @@ func resolveNudgePattern(pattern string, agents []*AgentSession) []string {
 			}
 		} else if targetPattern == constants.RoleWitness {
 			if agent.Type != AgentWitness {
+				continue
+			}
+		} else if targetPattern == "librarian" {
+			if agent.Type != AgentLibrarian {
 				continue
 			}
 		} else if targetPattern == constants.RoleRefinery {
@@ -662,6 +673,8 @@ func sessionNameToAddress(sessionName string) string {
 		return constants.RoleMayor
 	case session.RoleDeacon:
 		return constants.RoleDeacon
+	case session.RoleLibrarian:
+		return fmt.Sprintf("%s/librarian", identity.Rig)
 	case session.RoleWitness:
 		return fmt.Sprintf("%s/witness", identity.Rig)
 	case session.RoleRefinery:
@@ -706,6 +719,8 @@ func addressToAgentBeadID(address string) string {
 	role := parts[1]
 
 	switch role {
+	case "librarian":
+		return session.LibrarianSessionName(session.PrefixFor(rig))
 	case constants.RoleWitness:
 		return session.WitnessSessionName(session.PrefixFor(rig))
 	case constants.RoleRefinery:

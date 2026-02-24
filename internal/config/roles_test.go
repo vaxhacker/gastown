@@ -32,8 +32,8 @@ func TestLoadBuiltinRoleDefinition(t *testing.T) {
 		{
 			name:        "librarian",
 			role:        "librarian",
-			wantScope:   "town",
-			wantPattern: "hq-librarian",
+			wantScope:   "rig",
+			wantPattern: "{prefix}-librarian",
 			wantPreSync: false,
 		},
 		{
@@ -148,8 +148,8 @@ func TestAllRoles(t *testing.T) {
 
 func TestTownRoles(t *testing.T) {
 	roles := TownRoles()
-	if len(roles) != 4 {
-		t.Errorf("TownRoles() returned %d roles, want 4", len(roles))
+	if len(roles) != 3 {
+		t.Errorf("TownRoles() returned %d roles, want 3", len(roles))
 	}
 
 	for _, r := range roles {
@@ -165,8 +165,8 @@ func TestTownRoles(t *testing.T) {
 
 func TestRigRoles(t *testing.T) {
 	roles := RigRoles()
-	if len(roles) != 4 {
-		t.Errorf("RigRoles() returned %d roles, want 4", len(roles))
+	if len(roles) != 5 {
+		t.Errorf("RigRoles() returned %d roles, want 5", len(roles))
 	}
 
 	for _, r := range roles {

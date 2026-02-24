@@ -55,7 +55,6 @@ The HQ (headquarters) is the top-level directory where Gas Town is installed -
 the root of your workspace where all rigs and agents live. It contains:
   - CLAUDE.md            Mayor role context (Mayor runs from HQ root)
   - mayor/               Mayor config, state, and rig registry
-  - librarian/           Librarian docs/knowledge operations workspace
   - .beads/              Town-level beads DB (hq-* prefix for mayor mail)
 
 If path is omitted, uses the current directory.
@@ -315,19 +314,6 @@ func runInstall(cmd *cobra.Command, args []string) error {
 			fmt.Printf("   %s Could not create deacon settings: %v\n", style.Dim.Render("⚠"), err)
 		} else {
 			fmt.Printf("   ✓ Created deacon/.claude/settings.json\n")
-		}
-	}
-
-	// Create librarian directory and settings (town-level docs/knowledge operator).
-	librarianDir := filepath.Join(absPath, "librarian")
-	if err := os.MkdirAll(librarianDir, 0755); err != nil {
-		fmt.Printf("   %s Could not create librarian directory: %v\n", style.Dim.Render("⚠"), err)
-	} else {
-		librarianRuntimeConfig := config.ResolveRoleAgentConfig("librarian", absPath, librarianDir)
-		if err := runtime.EnsureSettingsForRole(librarianDir, librarianDir, "librarian", librarianRuntimeConfig); err != nil {
-			fmt.Printf("   %s Could not create librarian settings: %v\n", style.Dim.Render("⚠"), err)
-		} else {
-			fmt.Printf("   ✓ Created librarian/.claude/settings.json\n")
 		}
 	}
 

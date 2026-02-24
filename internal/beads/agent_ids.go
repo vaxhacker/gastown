@@ -38,6 +38,12 @@ func DogBeadIDTown(name string) string {
 	return fmt.Sprintf("%s-dog-%s", TownBeadsPrefix, name)
 }
 
+// LibrarianBeadIDWithPrefix returns the Librarian agent bead ID for a rig.
+// Librarian is rig-scoped and follows: <prefix>-<rig>-librarian
+func LibrarianBeadIDWithPrefix(prefix, rigName string) string {
+	return AgentBeadIDWithPrefix(prefix, rigName, "librarian", "")
+}
+
 // RoleBeadIDTown returns the role bead ID for town-level storage.
 // Role beads define lifecycle configuration for each agent type.
 // Uses "hq-" prefix for town-level storage: hq-<role>-role
@@ -89,6 +95,7 @@ var ValidAgentRoles = []string{
 	"dog",                  // Town-level with name: gt-dog-<name>
 	constants.RoleWitness,  // Per-rig: gt-<rig>-witness
 	constants.RoleRefinery, // Per-rig: gt-<rig>-refinery
+	"librarian",            // Per-rig: gt-<rig>-librarian
 	constants.RoleCrew,    // Per-rig with name: gt-<rig>-crew-<name>
 	constants.RolePolecat, // Per-rig with name: gt-<rig>-polecat-<name>
 }
@@ -100,7 +107,7 @@ var TownLevelRoles = []string{constants.RoleMayor, constants.RoleDeacon}
 var TownLevelNamedRoles = []string{"dog"}
 
 // RigLevelRoles are agent roles that have a rig but no name.
-var RigLevelRoles = []string{constants.RoleWitness, constants.RoleRefinery}
+var RigLevelRoles = []string{constants.RoleWitness, constants.RoleRefinery, "librarian"}
 
 // NamedRoles are agent roles that include a worker name (rig-level).
 var NamedRoles = []string{constants.RoleCrew, constants.RolePolecat}
