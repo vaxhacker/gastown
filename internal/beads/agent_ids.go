@@ -36,6 +36,12 @@ func DogBeadIDTown(name string) string {
 	return fmt.Sprintf("%s-dog-%s", TownBeadsPrefix, name)
 }
 
+// LibrarianBeadIDWithPrefix returns the Librarian agent bead ID for a rig.
+// Librarian is rig-scoped and follows: <prefix>-<rig>-librarian
+func LibrarianBeadIDWithPrefix(prefix, rigName string) string {
+	return AgentBeadIDWithPrefix(prefix, rigName, "librarian", "")
+}
+
 // RoleBeadIDTown returns the role bead ID for town-level storage.
 // Role beads define lifecycle configuration for each agent type.
 // Uses "hq-" prefix for town-level storage: hq-<role>-role
@@ -82,13 +88,14 @@ func CrewRoleBeadIDTown() string {
 
 // ValidAgentRoles are the known agent role types for ID pattern validation.
 var ValidAgentRoles = []string{
-	"mayor",    // Town-level: gt-mayor
-	"deacon",   // Town-level: gt-deacon
-	"dog",      // Town-level with name: gt-dog-<name>
-	"witness",  // Per-rig: gt-<rig>-witness
-	"refinery", // Per-rig: gt-<rig>-refinery
-	"crew",     // Per-rig with name: gt-<rig>-crew-<name>
-	"polecat",  // Per-rig with name: gt-<rig>-polecat-<name>
+	"mayor",     // Town-level: gt-mayor
+	"deacon",    // Town-level: gt-deacon
+	"dog",       // Town-level with name: gt-dog-<name>
+	"witness",   // Per-rig: gt-<rig>-witness
+	"refinery",  // Per-rig: gt-<rig>-refinery
+	"librarian", // Per-rig: gt-<rig>-librarian
+	"crew",      // Per-rig with name: gt-<rig>-crew-<name>
+	"polecat",   // Per-rig with name: gt-<rig>-polecat-<name>
 }
 
 // TownLevelRoles are agent roles that don't have a rig.
@@ -98,7 +105,7 @@ var TownLevelRoles = []string{"mayor", "deacon"}
 var TownLevelNamedRoles = []string{"dog"}
 
 // RigLevelRoles are agent roles that have a rig but no name.
-var RigLevelRoles = []string{"witness", "refinery"}
+var RigLevelRoles = []string{"witness", "refinery", "librarian"}
 
 // NamedRoles are agent roles that include a worker name (rig-level).
 var NamedRoles = []string{"crew", "polecat"}
