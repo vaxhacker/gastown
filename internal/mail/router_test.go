@@ -1059,6 +1059,7 @@ func TestValidateRecipient(t *testing.T) {
 	createAgent("gt-mayor", "Mayor agent")
 	createAgent("gt-deacon", "Deacon agent")
 	createAgent("gt-testrig-witness", "Test witness")
+	createAgent("gt-testrig-librarian", "Test librarian")
 	createAgent("gt-testrig-crew-alice", "Test crew alice")
 	createAgent("gt-testrig-polecat-bob", "Test polecat bob")
 
@@ -1087,6 +1088,7 @@ func TestValidateRecipient(t *testing.T) {
 
 		// Rig-level agents (validated against beads)
 		{"witness", "testrig/witness", false, ""},
+		{"librarian", "testrig/librarian", false, ""},
 		{"crew member", "testrig/alice", false, ""},
 		{"polecat", "testrig/bob", false, ""},
 
@@ -1149,6 +1151,20 @@ func TestValidateAgentWorkspaceDog(t *testing.T) {
 	}
 }
 
+func TestAgentBeadToAddress_CollapsedLibrarianID(t *testing.T) {
+	setupTestRegistryForAddressTest(t)
+
+	bead := &agentBead{
+		ID:          "gt-librarian",
+		Description: "role_type: librarian\nrig: gastown",
+	}
+
+	got := agentBeadToAddress(bead)
+	if got != "gastown/librarian" {
+		t.Errorf("agentBeadToAddress(%q) = %q, want %q", bead.ID, got, "gastown/librarian")
+	}
+}
+
 func setupTestRegistryForAddressTest(t *testing.T) {
 	t.Helper()
 	reg := session.NewPrefixRegistry()
@@ -1196,6 +1212,11 @@ func TestAddressToAgentBeadID(t *testing.T) {
 			name:     "refinery",
 			address:  "gastown/refinery",
 			expected: "gt-refinery",
+		},
+		{
+			name:     "librarian",
+			address:  "gastown/librarian",
+			expected: "gt-librarian",
 		},
 		{
 			name:     "crew member",
