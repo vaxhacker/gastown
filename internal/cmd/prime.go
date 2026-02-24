@@ -856,12 +856,13 @@ func getAgentBeadID(ctx RoleContext) string {
 	}
 }
 
-// ensureBeadsRedirect ensures the .beads/redirect file exists for worktree-based roles.
+// ensureBeadsRedirect ensures the .beads/redirect file exists for roles that use shared beads.
 // This handles cases where git clean or other operations delete the redirect file.
 // Uses the shared SetupRedirect helper which handles both tracked and local beads.
 func ensureBeadsRedirect(ctx RoleContext) {
-	// Only applies to worktree-based roles that use shared beads
-	if ctx.Role != RoleCrew && ctx.Role != RolePolecat && ctx.Role != RoleRefinery {
+	// Only applies to roles that use shared beads via redirect.
+	// Librarian is rig-scoped and uses a redirect to the rig's beads.
+	if ctx.Role != RoleCrew && ctx.Role != RolePolecat && ctx.Role != RoleRefinery && ctx.Role != RoleLibrarian {
 		return
 	}
 

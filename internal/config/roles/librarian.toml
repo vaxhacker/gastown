@@ -13,7 +13,8 @@ needs_pre_sync = false
 start_command = "exec claude --dangerously-skip-permissions"
 
 [env]
-GT_ROLE = "librarian"
+# GT_ROLE is set by AgentEnv() to "{rig}/librarian" at session start.
+# GT_SCOPE declares this role as rig-scoped (not town-level).
 GT_SCOPE = "rig"
 
 [health]
