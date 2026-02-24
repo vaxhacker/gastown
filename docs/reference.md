@@ -573,6 +573,17 @@ Agent overrides:
 - `gt mayor start|attach|restart --agent <alias>` and `gt deacon start|attach|restart --agent <alias>` do the same.
 - `gt start crew <name> --agent <alias>` and `gt crew at <name> --agent <alias>` override the crew worker runtime.
 
+Crew restart modes (important):
+
+- `gt crew refresh` and `gt crew restart` use interactive mode and can trigger approval prompts.
+- For non-interactive/no-approval crew restarts, use:
+
+```bash
+gt crew stop <name> --rig <rig>
+gt crew at <name> --rig <rig> --detached --agent claude
+gt nudge <rig>/crew/<name> "Run gt prime, read handoff/context, continue."
+```
+
 ### Communication
 
 ```bash
