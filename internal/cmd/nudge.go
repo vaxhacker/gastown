@@ -268,6 +268,8 @@ func runNudge(cmd *cobra.Command, args []string) (retErr error) {
 			sender = fmt.Sprintf("%s/refinery", roleInfo.Rig)
 		case RoleDeacon:
 			sender = constants.RoleDeacon
+		case RoleLibrarian:
+			sender = fmt.Sprintf("%s/librarian", roleInfo.Rig)
 		default:
 			sender = string(roleInfo.Role)
 		}

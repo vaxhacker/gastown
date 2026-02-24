@@ -69,7 +69,7 @@ var rigTypeOrder = map[AgentType]int{
 var AgentTypeIcons = map[AgentType]string{
 	AgentMayor:     constants.EmojiMayor,
 	AgentDeacon:    constants.EmojiDeacon,
-	AgentLibrarian: constants.EmojiWitness,
+	AgentLibrarian: constants.EmojiLibrarian,
 	AgentWitness:   constants.EmojiWitness,
 	AgentRefinery:  constants.EmojiRefinery,
 	AgentCrew:      constants.EmojiCrew,
@@ -83,7 +83,7 @@ var agentsCmd = &cobra.Command{
 	Short:   "List Gas Town agent sessions",
 	Long: `List Gas Town agent sessions to stdout.
 
-Shows Mayor, Deacon, Librarians, Witnesses, Refineries, and Crew workers.
+Shows Mayor, Deacon, Witnesses, Refineries, and Crew workers.
 Polecats are hidden (use 'gt polecat list' to see them).
 
 Use 'gt agents menu' for an interactive tmux popup menu.`,
@@ -168,8 +168,6 @@ func categorizeSession(name string) *AgentSession {
 		sess.Type = AgentMayor
 	case session.RoleDeacon:
 		sess.Type = AgentDeacon
-	case session.RoleLibrarian:
-		sess.Type = AgentLibrarian
 	case session.RoleWitness:
 		sess.Type = AgentWitness
 	case session.RoleRefinery:
@@ -178,6 +176,8 @@ func categorizeSession(name string) *AgentSession {
 		sess.Type = AgentCrew
 	case session.RolePolecat:
 		sess.Type = AgentPolecat
+	case session.RoleLibrarian:
+		sess.Type = AgentLibrarian
 	case session.RoleOverseer:
 		return nil // overseer is the human operator, not a display agent
 	default:
@@ -353,7 +353,7 @@ func filterAndSortSessions(sessionNames []string, includePolecats bool) []*Agent
 			return a.Rig < b.Rig
 		}
 
-		// Within rig: refinery, librarian, witness, crew, polecat
+		// Within rig: refinery, witness, crew, polecat
 		if rigTypeOrder[a.Type] != rigTypeOrder[b.Type] {
 			return rigTypeOrder[a.Type] < rigTypeOrder[b.Type]
 		}
@@ -573,8 +573,6 @@ func runAgentsList(cmd *cobra.Command, args []string) error {
 			fmt.Printf("  %s Mayor\n", icon)
 		case AgentDeacon:
 			fmt.Printf("  %s Deacon\n", icon)
-		case AgentLibrarian:
-			fmt.Printf("  %s librarian\n", icon)
 		case AgentWitness:
 			fmt.Printf("  %s witness\n", icon)
 		case AgentRefinery:
@@ -591,11 +589,11 @@ func runAgentsList(cmd *cobra.Command, args []string) error {
 
 // CollisionReport holds the results of a collision check.
 type CollisionReport struct {
-	TotalSessions int                       `json:"total_sessions"`
-	TotalLocks    int                       `json:"total_locks"`
-	Collisions    int                       `json:"collisions"`
-	StaleLocks    int                       `json:"stale_locks"`
-	Issues        []CollisionIssue          `json:"issues,omitempty"`
+	TotalSessions int                    `json:"total_sessions"`
+	TotalLocks    int                    `json:"total_locks"`
+	Collisions    int                    `json:"collisions"`
+	StaleLocks    int                    `json:"stale_locks"`
+	Issues        []CollisionIssue       `json:"issues,omitempty"`
 	Locks         map[string]*lock.LockInfo `json:"locks,omitempty"`
 }
 

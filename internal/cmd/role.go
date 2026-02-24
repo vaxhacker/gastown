@@ -350,6 +350,8 @@ func parseRoleString(s string) (Role, string, string) {
 		return RoleMayor, "", ""
 	case constants.RoleDeacon:
 		return RoleDeacon, "", ""
+	case "librarian":
+		return RoleLibrarian, "", ""
 	case "boot":
 		return RoleBoot, "", ""
 	case "dog":
@@ -410,7 +412,7 @@ func (info RoleInfo) ActorString() string {
 		if info.Rig != "" {
 			return fmt.Sprintf("%s/librarian", info.Rig)
 		}
-		return ""
+		return "librarian"
 	case RoleWitness:
 		if info.Rig != "" {
 			return fmt.Sprintf("%s/witness", info.Rig)

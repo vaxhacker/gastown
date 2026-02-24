@@ -278,7 +278,7 @@ func runLibrarianStatus(cmd *cobra.Command, args []string) error {
 		return enc.Encode(out)
 	}
 
-	fmt.Printf("%s Librarian: %s\n\n", style.Bold.Render(AgentTypeIcons[AgentWitness]), rigName)
+	fmt.Printf("%s Librarian: %s\n\n", style.Bold.Render(AgentTypeIcons[AgentLibrarian]), rigName)
 	if running {
 		fmt.Printf("  State: %s\n", style.Bold.Render("● running"))
 		fmt.Printf("  Session: %s\n", sessionID)

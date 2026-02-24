@@ -1101,6 +1101,8 @@ func deriveSessionName() string {
 			return session.WitnessSessionName(prefix)
 		case RoleRefinery:
 			return session.RefinerySessionName(prefix)
+		case RoleLibrarian:
+			return fmt.Sprintf("%s-librarian", prefix)
 		}
 	}
 
