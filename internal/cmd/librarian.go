@@ -145,7 +145,7 @@ type RigReference struct {
 }
 
 func librarianSessionName(rigName string) string {
-	return session.LibrarianSessionName(session.PrefixFor(rigName))
+	return fmt.Sprintf("%s-librarian", session.PrefixFor(rigName))
 }
 
 func librarianWorkDir(ref *RigReference) string {
@@ -218,6 +218,7 @@ func runLibrarianStart(cmd *cobra.Command, args []string) error {
 	fmt.Printf("%s Librarian started for %s\n", style.Bold.Render("✓"), rigName)
 	fmt.Printf("  %s\n", style.Dim.Render("Use 'gt librarian attach' to connect"))
 	fmt.Printf("  %s\n", style.Dim.Render("Use 'gt librarian status' to check status"))
+	fmt.Printf("  %s\n", style.Dim.Render("In session, run 'gt prime' first"))
 	return nil
 }
 
@@ -277,7 +278,7 @@ func runLibrarianStatus(cmd *cobra.Command, args []string) error {
 		return enc.Encode(out)
 	}
 
-	fmt.Printf("%s Librarian: %s\n\n", style.Bold.Render(AgentTypeIcons[AgentLibrarian]), rigName)
+	fmt.Printf("%s Librarian: %s\n\n", style.Bold.Render(AgentTypeIcons[AgentWitness]), rigName)
 	if running {
 		fmt.Printf("  State: %s\n", style.Bold.Render("● running"))
 		fmt.Printf("  Session: %s\n", sessionID)
