@@ -44,7 +44,25 @@ Debug routing: `BD_DEBUG_ROUTING=1 bd show <id>`
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
+| `git_url` | `string` | required | The git URL for the rig's repository. |
 | `default_branch` | `string` | `"main"` | Default branch for the rig. Auto-detected from remote during `gt rig add`. Used as the merge target by the Refinery and as the base for polecats when no integration branch is active. |
+
+### Git Remote Layout
+
+> **CRITICAL**: Every clone, worktree, and rig repo MUST use this layout:
+
+| Remote | Points to | Purpose |
+|--------|-----------|---------|
+| `origin` | **Your fork** (e.g. `vaxhacker/<repo>`) | Fetch AND push. This is YOUR canonical repo. |
+| `upstream` | **Upstream** (e.g. `steveyegge/<repo>`) | Read-only. For syncing. **NEVER push here.** |
+
+**Rules:**
+- `origin` fetch URL and push URL MUST be the same repo (your fork).
+- **NEVER** create split remotes (fetch from one repo, push to another).
+- **NEVER** create extra remotes like `forktmp`, `pushfork`, or `fork`.
+- If `origin` points to the wrong place, every `git pull`, `git push`, `make install`, and staleness check will break in confusing ways.
+
+To sync from upstream: `git fetch upstream && git cherry-pick <sha> && git push origin main`
 
 ### Settings (`settings/config.json`)
 
