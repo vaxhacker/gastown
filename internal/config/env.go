@@ -96,6 +96,12 @@ func AgentEnv(cfg AgentEnvConfig) map[string]string {
 		env["BD_ACTOR"] = fmt.Sprintf("%s/refinery", cfg.Rig)
 		env["GIT_AUTHOR_NAME"] = fmt.Sprintf("%s/refinery", cfg.Rig)
 
+	case "librarian":
+		env["GT_ROLE"] = fmt.Sprintf("%s/librarian", cfg.Rig)
+		env["GT_RIG"] = cfg.Rig
+		env["BD_ACTOR"] = fmt.Sprintf("%s/librarian", cfg.Rig)
+		env["GIT_AUTHOR_NAME"] = fmt.Sprintf("%s/librarian", cfg.Rig)
+
 	case "polecat":
 		env["GT_ROLE"] = fmt.Sprintf("%s/polecats/%s", cfg.Rig, cfg.AgentName)
 		env["GT_RIG"] = cfg.Rig
