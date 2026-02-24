@@ -50,6 +50,7 @@ var AgentDirs = []string{
 	"crew",
 	"refinery/rig",
 	"witness",
+	"librarian",
 	"mayor/rig",
 }
 

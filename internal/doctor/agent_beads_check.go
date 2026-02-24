@@ -80,7 +80,7 @@ func (c *AgentBeadsCheck) Run(ctx *CheckContext) *CheckResult {
 	// backward compatibility. The wisps list doesn't include type/labels, so we
 	// track wisp IDs separately for existence checks.
 	allAgentBeads := make(map[string]*beads.Issue) // from issues table (has labels)
-	allWispIDs := make(map[string]bool)             // from wisps table (ID only)
+	allWispIDs := make(map[string]bool)            // from wisps table (ID only)
 
 	// Load global agents from town beads
 	townBeadsPath := beads.GetTownBeadsPath(ctx.TownRoot)
@@ -161,9 +161,11 @@ func (c *AgentBeadsCheck) Run(ctx *CheckContext) *CheckResult {
 		// Check rig-specific agents (using canonical naming: prefix-rig-role-name)
 		witnessID := beads.WitnessBeadIDWithPrefix(prefix, rigName)
 		refineryID := beads.RefineryBeadIDWithPrefix(prefix, rigName)
+		librarianID := beads.LibrarianBeadIDWithPrefix(prefix, rigName)
 
 		checkAgentBead(witnessID)
 		checkAgentBead(refineryID)
+		checkAgentBead(librarianID)
 
 		// Check crew worker agents
 		crewWorkers := listCrewWorkers(ctx.TownRoot, rigName)
@@ -205,7 +207,7 @@ func (c *AgentBeadsCheck) Fix(ctx *CheckContext) error {
 	// Pre-load all known agent bead IDs (from both issues and wisps tables)
 	// so we can check existence without per-bead Show() calls that miss ephemeral wisps.
 	allAgentBeads := make(map[string]*beads.Issue) // from issues table
-	allWispIDs := make(map[string]bool)             // from wisps table
+	allWispIDs := make(map[string]bool)            // from wisps table
 
 	// Collect errors instead of failing on first — one broken rig shouldn't
 	// block fixes for all other rigs.
@@ -327,6 +329,14 @@ func (c *AgentBeadsCheck) Fix(ctx *CheckContext) error {
 		if err := fixAgentBead(bd, refineryID,
 			fmt.Sprintf("Refinery for %s - processes merge queue.", rigName),
 			&beads.AgentFields{RoleType: "refinery", Rig: rigName, AgentState: "idle"},
+		); err != nil {
+			errs = append(errs, err)
+		}
+
+		librarianID := beads.LibrarianBeadIDWithPrefix(prefix, rigName)
+		if err := fixAgentBead(bd, librarianID,
+			fmt.Sprintf("Librarian for %s - docs and knowledge operations specialist.", rigName),
+			&beads.AgentFields{RoleType: "librarian", Rig: rigName, AgentState: "idle"},
 		); err != nil {
 			errs = append(errs, err)
 		}

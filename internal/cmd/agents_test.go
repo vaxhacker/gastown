@@ -84,6 +84,7 @@ func TestCategorizeSession_AllTypes(t *testing.T) {
 		// commonly registered in the default PrefixRegistry.
 		{"witness", "gt-witness", AgentWitness},
 		{"refinery", "gt-refinery", AgentRefinery},
+		{"librarian", "gt-librarian", AgentLibrarian},
 		{"crew", "gt-crew-max", AgentCrew},
 		{"polecat", "gt-furiosa", AgentPolecat},
 	}
@@ -175,6 +176,7 @@ func TestDisplayLabel_AllTypes(t *testing.T) {
 	}{
 		{"mayor", AgentSession{Name: "hq-mayor", Type: AgentMayor}, "Mayor"},
 		{"deacon", AgentSession{Name: "hq-deacon", Type: AgentDeacon}, "Deacon"},
+		{"librarian", AgentSession{Name: "gt-librarian", Type: AgentLibrarian, Rig: "gastown"}, "gastown/librarian"},
 		{"witness", AgentSession{Name: "gt-witness", Type: AgentWitness, Rig: "gastown"}, "gastown/witness"},
 		{"refinery", AgentSession{Name: "gt-refinery", Type: AgentRefinery, Rig: "gastown"}, "gastown/refinery"},
 		{"crew", AgentSession{Name: "gt-crew-max", Type: AgentCrew, Rig: "gastown", AgentName: "max"}, "crew/max"},
@@ -279,14 +281,15 @@ func TestFilterAndSortSessions_BootSessionFiltered(t *testing.T) {
 func TestFilterAndSortSessions_SortOrder(t *testing.T) {
 	setupCmdTestRegistry(t)
 	input := []string{
-		"gt-crew-zed",    // crew (gastown)
-		"gt-witness",     // witness (gastown)
-		"hq-deacon",      // deacon
-		"gt-refinery",    // refinery (gastown)
-		"hq-mayor",       // mayor
-		"gt-furiosa",     // polecat (gastown)
-		"mr-witness",     // witness (myrig)
-		"gt-crew-alpha",  // crew (gastown)
+		"gt-crew-zed",   // crew (gastown)
+		"gt-witness",    // witness (gastown)
+		"gt-librarian",  // librarian (gastown)
+		"hq-deacon",     // deacon
+		"gt-refinery",   // refinery (gastown)
+		"hq-mayor",      // mayor
+		"gt-furiosa",    // polecat (gastown)
+		"mr-witness",    // witness (myrig)
+		"gt-crew-alpha", // crew (gastown)
 	}
 
 	got := filterAndSortSessions(input, true)
@@ -294,12 +297,13 @@ func TestFilterAndSortSessions_SortOrder(t *testing.T) {
 	// Expected order:
 	// 1. mayor (town-level)
 	// 2. deacon (town-level)
-	// 3. gastown/refinery (rig "gastown" < "myrig", refinery before witness)
-	// 4. gastown/witness
-	// 5. gastown/crew/alpha (crew after witness, alpha < zed)
-	// 6. gastown/crew/zed
-	// 7. gastown/polecat/furiosa (polecat last within rig)
-	// 8. myrig/witness
+	// 3. gastown/refinery (rig "gastown" < "myrig", refinery first)
+	// 4. gastown/librarian
+	// 5. gastown/witness
+	// 6. gastown/crew/alpha (crew after witness, alpha < zed)
+	// 7. gastown/crew/zed
+	// 8. gastown/polecat/furiosa (polecat last within rig)
+	// 9. myrig/witness
 	wantOrder := []struct {
 		wantType AgentType
 		wantName string
@@ -307,6 +311,7 @@ func TestFilterAndSortSessions_SortOrder(t *testing.T) {
 		{AgentMayor, "hq-mayor"},
 		{AgentDeacon, "hq-deacon"},
 		{AgentRefinery, "gt-refinery"},
+		{AgentLibrarian, "gt-librarian"},
 		{AgentWitness, "gt-witness"},
 		{AgentCrew, "gt-crew-alpha"},
 		{AgentCrew, "gt-crew-zed"},

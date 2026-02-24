@@ -415,7 +415,7 @@ func TestRoleShowE2E(t *testing.T) {
 		filepath.Join(hqPath, rigName, "refinery", "rig"),
 		filepath.Join(hqPath, rigName, "polecats", "Toast", "rig"),
 		filepath.Join(hqPath, rigName, "crew", "worker1", "rig"),
-		filepath.Join(hqPath, "librarian"),
+		filepath.Join(hqPath, rigName, "librarian"),
 	}
 	for _, dir := range dirs {
 		if err := os.MkdirAll(dir, 0755); err != nil {
@@ -448,10 +448,11 @@ func TestRoleShowE2E(t *testing.T) {
 		},
 		{
 			name:       "librarian from librarian dir",
-			cwd:        filepath.Join(hqPath, "librarian"),
+			cwd:        filepath.Join(hqPath, rigName, "librarian"),
 			wantRole:   "librarian",
 			wantSource: "cwd",
-			wantHome:   filepath.Join(hqPath, "librarian"),
+			wantHome:   filepath.Join(hqPath, rigName, "librarian"),
+			wantRig:    rigName,
 		},
 		{
 			name:       "witness from witness dir",

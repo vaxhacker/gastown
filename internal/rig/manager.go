@@ -660,6 +660,12 @@ Use crew for your own workspace. Polecats are for batch work dispatch.
 	if err := os.MkdirAll(witnessPath, 0755); err != nil {
 		return nil, fmt.Errorf("creating witness dir: %w", err)
 	}
+
+	// Create librarian directory (rig-level docs/knowledge operator)
+	librarianPath := filepath.Join(rigPath, "librarian")
+	if err := os.MkdirAll(librarianPath, 0755); err != nil {
+		return nil, fmt.Errorf("creating librarian dir: %w", err)
+	}
 	// NOTE: Witness hooks are installed by witness/manager.go:Start() via EnsureSettingsForRole.
 	// No need to create patrol hooks here — agents self-install at startup.
 
@@ -894,13 +900,13 @@ func (m *Manager) InitBeads(rigPath, prefix, rigName string) error {
 	return nil
 }
 
-// initAgentBeads creates rig-level agent beads for Witness and Refinery.
+// initAgentBeads creates rig-level agent beads for Witness, Refinery, and Librarian.
 // These agents use the rig's beads prefix and are stored in rig beads.
 //
 // Town-level agents (Mayor, Deacon) are created by gt install in town beads.
 // Role beads are also created by gt install with hq- prefix.
 //
-// Rig-level agents (Witness, Refinery) are created here in rig beads with rig prefix.
+// Rig-level agents (Witness, Refinery, Librarian) are created here in rig beads with rig prefix.
 // Format: <prefix>-<rig>-<role> (e.g., pi-pixelforge-witness)
 //
 // Agent beads track lifecycle state for ZFC compliance (gt-h3hak, gt-pinkq).
@@ -933,6 +939,12 @@ func (m *Manager) initAgentBeads(rigPath, rigName, prefix string) error {
 			roleType: "refinery",
 			rig:      rigName,
 			desc:     fmt.Sprintf("Refinery for %s - processes merge queue.", rigName),
+		},
+		{
+			id:       beads.LibrarianBeadIDWithPrefix(prefix, rigName),
+			roleType: "librarian",
+			rig:      rigName,
+			desc:     fmt.Sprintf("Librarian for %s - docs and knowledge operations specialist.", rigName),
 		},
 	}
 
