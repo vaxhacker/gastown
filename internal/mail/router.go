@@ -351,14 +351,25 @@ func agentBeadToAddress(bead *agentBead) string {
 	parts := strings.Split(rest, "-")
 
 	if len(parts) == 1 {
+		role := parts[0]
 		// Town-level: gt-mayor, gt-deacon
-		return parts[0] + "/"
+		if role == "mayor" || role == "deacon" {
+			return role + "/"
+		}
+		// Collapsed rig singletons: <prefix>-<role>
+		// e.g., cm-librarian -> cmtestsuite/librarian
+		if role == "witness" || role == "refinery" || role == "librarian" {
+			prefix := strings.SplitN(id, "-", 2)[0]
+			rig := session.DefaultRegistry().RigForPrefix(prefix)
+			return rig + "/" + role
+		}
+		return ""
 	}
 
 	// Scan from right for known role markers
 	for i := len(parts) - 1; i >= 1; i-- {
 		switch parts[i] {
-		case "witness", "refinery":
+		case "witness", "refinery", "librarian":
 			// Singleton role: rig is everything before the role
 			rig := strings.Join(parts[:i], "-")
 			return rig + "/" + parts[i]
@@ -408,12 +419,12 @@ func parseRigAgentAddress(bead *agentBead) string {
 	if rig == "" || rig == "null" || roleType == "" || roleType == "null" {
 		// Fallback: parse from bead ID by scanning for known role markers.
 		// ID format: <prefix>-<rig>-<role>[-<name>]
-		// Known rig-level roles: crew, polecat, witness, refinery
+		// Known rig-level roles: crew, polecat, witness, refinery, librarian
 		return parseRigAgentAddressFromID(bead.ID)
 	}
 
-	// For singleton roles (witness, refinery), address is rig/role
-	if roleType == "witness" || roleType == "refinery" {
+	// For singleton roles (witness, refinery, librarian), address is rig/role
+	if roleType == "witness" || roleType == "refinery" || roleType == "librarian" {
 		return rig + "/" + roleType
 	}
 
@@ -445,7 +456,7 @@ func parseRigAgentAddress(bead *agentBead) string {
 // Keep role lists in sync with beads.RigLevelRoles and beads.NamedRoles.
 func parseRigAgentAddressFromID(id string) string {
 	// Singleton roles: no name segment allowed
-	singletonRoles := []string{"witness", "refinery"}
+	singletonRoles := []string{"witness", "refinery", "librarian"}
 	// Named roles: require a name segment
 	namedRoles := []string{"crew", "polecat"}
 
