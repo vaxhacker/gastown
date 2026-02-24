@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/steveyegge/gastown/internal/beads"
+	"github.com/steveyegge/gastown/internal/session"
 )
 
 func TestMatchPattern(t *testing.T) {
@@ -29,10 +30,10 @@ func TestMatchPattern(t *testing.T) {
 		{"gastown/crew/*", "gastown/polecats/Toast", false},
 
 		// Different path lengths
-		{"gastown/*", "gastown/crew/max", false},      // * matches single segment
-		{"gastown/*/*", "gastown/crew/max", true},     // Multiple wildcards
-		{"*/*", "gastown/witness", true},              // Both wildcards
-		{"*/*/*", "gastown/crew/max", true},           // Three-level wildcard
+		{"gastown/*", "gastown/crew/max", false},  // * matches single segment
+		{"gastown/*/*", "gastown/crew/max", true}, // Multiple wildcards
+		{"*/*", "gastown/witness", true},          // Both wildcards
+		{"*/*/*", "gastown/crew/max", true},       // Three-level wildcard
 	}
 
 	for _, tt := range tests {
@@ -46,6 +47,13 @@ func TestMatchPattern(t *testing.T) {
 }
 
 func TestAgentBeadIDToAddress(t *testing.T) {
+	reg := session.NewPrefixRegistry()
+	reg.Register("gt", "gastown")
+	reg.Register("bd", "beads")
+	old := session.DefaultRegistry()
+	session.SetDefaultRegistry(reg)
+	t.Cleanup(func() { session.SetDefaultRegistry(old) })
+
 	tests := []struct {
 		id   string
 		want string
@@ -61,7 +69,9 @@ func TestAgentBeadIDToAddress(t *testing.T) {
 		// Rig singletons
 		{"gt-gastown-witness", "gastown/witness"},
 		{"gt-gastown-refinery", "gastown/refinery"},
+		{"gt-gastown-librarian", "gastown/librarian"},
 		{"gt-beads-witness", "beads/witness"},
+		{"gt-librarian", "gastown/librarian"},
 
 		// Named agents
 		{"gt-gastown-crew-max", "gastown/crew/max"},
