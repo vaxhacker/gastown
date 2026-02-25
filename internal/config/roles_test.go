@@ -55,7 +55,7 @@ func TestLoadBuiltinRoleDefinition(t *testing.T) {
 			role:        "polecat",
 			wantScope:   "rig",
 			wantPattern: "{prefix}-{name}",
-			wantPreSync: true,
+			wantPreSync: false,
 		},
 		{
 			name:        "crew",
