@@ -45,8 +45,7 @@ state.json
 .beads/sync_base.jsonl
 .beads-wisp/
 
-# Clone-specific CLAUDE.md (regenerated locally per clone)
-CLAUDE.md
+# CLAUDE.md is a symlink to AGENTS.md — both agents read same instructions
 
 # Formulas: source of truth is internal/formula/formulas/ (embedded in binary).
 # .beads/formulas/ is provisioned at runtime by gt install / gt doctor fix.
