@@ -1416,3 +1416,24 @@
 {"actor":"gastown/refinery","comment":"","created_at":"2026-02-27T20:53:11Z","event_type":"closed","id":4594,"issue_id":"gt-wisp-aml3y","new_value":"patrol cycle complete: Merged 2 branches to main: gt-q3or (lifecycle defaults) and gt-emm4 (gc to compactor). Clean rebases, no conflicts. 2 pre-existing test failures already tracked.","old_value":""}
 {"actor":"gastown/refinery","comment":"","created_at":"2026-02-27T20:53:33Z","event_type":"closed","id":4595,"issue_id":"gt-wisp-jtkgk","new_value":"patrol cycle complete: No new work. Queue shows 2 already-merged MRs pending witness cleanup.","old_value":""}
 {"actor":"gastown/refinery","comment":"","created_at":"2026-02-27T20:53:54Z","event_type":"closed","id":4596,"issue_id":"gt-wisp-un54a","new_value":"patrol cycle complete: No new work. 2 stale MRs pending witness cleanup. Waiting for new MERGE_READY signals.","old_value":""}
+{"actor":"gastown/polecats/nux","comment":"","created_at":"2026-02-27T21:03:36Z","event_type":"created","id":4597,"issue_id":"gt-wisp-6q03h","new_value":"","old_value":""}
+{"actor":"gastown/witness","comment":"","created_at":"2026-02-27T21:05:08Z","event_type":"closed","id":4598,"issue_id":"gt-wisp-ywxaa","new_value":"burned: polecat nuked","old_value":""}
+{"actor":"gastown/refinery","comment":"","created_at":"2026-02-27T21:05:14Z","event_type":"closed","id":4599,"issue_id":"gt-wisp-1yymc","new_value":"merged","old_value":""}
+{"actor":"gastown/refinery","comment":"","created_at":"2026-02-27T21:05:15Z","event_type":"closed","id":4600,"issue_id":"gt-wisp-qs26g","new_value":"merged","old_value":""}
+{"actor":"mayor","comment":"","created_at":"2026-02-27T21:05:24Z","event_type":"created","id":4601,"issue_id":"gt-gastown-polecat-furiosa","new_value":"","old_value":""}
+{"actor":"mayor","comment":"","created_at":"2026-02-27T21:05:33Z","event_type":"created","id":4602,"issue_id":"gt-gastown-polecat-nux","new_value":"","old_value":""}
+{"actor":"mayor","comment":"","created_at":"2026-02-27T21:05:45Z","event_type":"created","id":4603,"issue_id":"gt-gastown-polecat-slit","new_value":"","old_value":""}
+{"actor":"mayor","comment":"","created_at":"2026-02-27T21:05:56Z","event_type":"created","id":4604,"issue_id":"gt-gastown-polecat-rictus","new_value":"","old_value":""}
+{"actor":"mayor","comment":"","created_at":"2026-02-27T21:06:07Z","event_type":"created","id":4605,"issue_id":"gt-gastown-polecat-dementus","new_value":"","old_value":""}
+{"actor":"gastown/refinery","comment":"","created_at":"2026-02-27T21:07:42Z","event_type":"closed","id":4606,"issue_id":"gt-wisp-6q03h","new_value":"rejected: Branch polecat/nux/gt-i2vm@mm5u56mf deleted from remote. Nux reassigned to gt-1fje.","old_value":""}
+{"actor":"gastown/polecats/furiosa","comment":"","created_at":"2026-02-27T21:09:36Z","event_type":"created","id":4607,"issue_id":"gt-wisp-qpr88","new_value":"","old_value":""}
+{"actor":"gastown/polecats/nux","comment":"","created_at":"2026-02-27T21:10:33Z","event_type":"created","id":4608,"issue_id":"gt-wisp-5e2pe","new_value":"","old_value":""}
+{"actor":"gastown/polecats/slit","comment":"","created_at":"2026-02-27T21:11:29Z","event_type":"created","id":4609,"issue_id":"gt-wisp-8xffw","new_value":"","old_value":""}
+{"actor":"gastown/refinery","comment":"","created_at":"2026-02-27T21:13:18Z","event_type":"closed","id":4610,"issue_id":"gt-wisp-qpr88","new_value":"Merged to main: fix syscall.SIGUSR2 for Windows cross-compilation","old_value":""}
+{"actor":"gastown/polecats/dementus","comment":"","created_at":"2026-02-27T21:16:58Z","event_type":"created","id":4611,"issue_id":"gt-wisp-xlm26","new_value":"","old_value":""}
+{"actor":"mayor","comment":"","created_at":"2026-02-27T21:17:39Z","event_type":"created","id":4612,"issue_id":"gt-gastown-polecat-furiosa","new_value":"","old_value":""}
+{"actor":"mayor","comment":"","created_at":"2026-02-27T21:17:44Z","event_type":"created","id":4613,"issue_id":"gt-gastown-polecat-furiosa","new_value":"","old_value":""}
+{"actor":"mayor","comment":"","created_at":"2026-02-27T21:17:49Z","event_type":"created","id":4614,"issue_id":"gt-gastown-polecat-furiosa","new_value":"","old_value":""}
+{"actor":"mayor","comment":"","created_at":"2026-02-27T21:18:11Z","event_type":"created","id":4615,"issue_id":"gt-gastown-polecat-furiosa","new_value":"","old_value":""}
+{"actor":"mayor","comment":"","created_at":"2026-02-27T21:18:14Z","event_type":"created","id":4616,"issue_id":"gt-gastown-polecat-furiosa","new_value":"","old_value":""}
+{"actor":"mayor","comment":"","created_at":"2026-02-27T21:18:18Z","event_type":"created","id":4617,"issue_id":"gt-gastown-polecat-furiosa","new_value":"","old_value":""}
