@@ -84,6 +84,7 @@ type AgentFields struct {
 // Agent state constants for the agent_state field in agent beads.
 // These represent the beads-level agent lifecycle state, which is distinct from
 // the polecat.State lifecycle type (though values overlap).
+// Note: AgentStateIdle and AgentStateStuck are declared above in the primary block.
 const (
 	AgentStateAwaitingGate = "awaiting-gate" // Waiting for a gate condition, intentional pause
 )
