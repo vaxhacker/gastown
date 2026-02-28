@@ -1,7 +1,8 @@
 {"issue_id":"gt-eg6","label":"desire-path"}
 {"issue_id":"gt-gastown-librarian","label":"gt:agent"}
 {"issue_id":"gt-gastown-polecat-furiosa","label":"gt:agent"}
+{"issue_id":"gt-gastown-refinery","label":"backoff-until:1772281167"}
 {"issue_id":"gt-gastown-refinery","label":"gt:agent"}
 {"issue_id":"gt-gastown-witness","label":"gt:agent"}
 {"issue_id":"gt-rig-gastown","label":"gt:rig"}
-{"issue_id":"gt-wisp-juu8","label":"gt:merge-request"}
+{"issue_id":"gt-wisp-hg1u","label":"backoff-until:1772279687"}
