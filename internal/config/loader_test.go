@@ -4283,8 +4283,8 @@ func TestBuildStartupCommandWithAgentOverride_SetsGTProcessNames(t *testing.T) {
 	}
 
 	// Should include GT_PROCESS_NAMES with gemini's process names
-	if !strings.Contains(cmd, "GT_PROCESS_NAMES=gemini") {
-		t.Errorf("expected GT_PROCESS_NAMES=gemini in command, got: %q", cmd)
+	if !strings.Contains(cmd, "GT_PROCESS_NAMES=node,gemini") {
+		t.Errorf("expected GT_PROCESS_NAMES=node,gemini in command, got: %q", cmd)
 	}
 }
 

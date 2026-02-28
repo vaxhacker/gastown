@@ -600,7 +600,7 @@ func TestGetProcessNames(t *testing.T) {
 		want      []string
 	}{
 		{"claude", []string{"node", "claude"}},
-		{"gemini", []string{"gemini"}},
+		{"gemini", []string{"node", "gemini"}},
 		{"codex", []string{"codex"}},
 		{"cursor", []string{"cursor-agent"}},
 		{"auggie", []string{"auggie"}},
