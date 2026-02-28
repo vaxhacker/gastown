@@ -1095,3 +1095,56 @@
 {"actor":"gastown/witness","comment":"","created_at":"2026-02-27T17:40:09Z","event_type":"closed","id":4273,"issue_id":"gt-wisp-ijijb","new_value":"burned: polecat nuked","old_value":""}
 {"actor":"gastown/witness","comment":"","created_at":"2026-02-27T17:40:18Z","event_type":"closed","id":4274,"issue_id":"gt-wisp-4lb07","new_value":"burned: polecat nuked","old_value":""}
 {"actor":"dog","comment":"","created_at":"2026-02-27T17:40:22Z","event_type":"created","id":4275,"issue_id":"gt-gastown-polecat-nux","new_value":"","old_value":""}
+{"actor":"dog","comment":"","created_at":"2026-02-27T17:40:23Z","event_type":"created","id":4276,"issue_id":"gt-wisp-a9dse","new_value":"","old_value":""}
+{"actor":"dog","comment":"","created_at":"2026-02-27T17:40:23Z","event_type":"closed","id":4277,"issue_id":"gt-wisp-ijijb","new_value":"burned: force re-sling","old_value":""}
+{"actor":"gastown/polecats/nux","comment":"","created_at":"2026-02-27T17:40:54Z","event_type":"closed","id":4278,"issue_id":"gt-wisp-s416q","new_value":"Closed","old_value":""}
+{"actor":"gastown/polecats/nux","comment":"","created_at":"2026-02-27T17:41:09Z","event_type":"closed","id":4279,"issue_id":"gt-wisp-xymoy","new_value":"Closed","old_value":""}
+{"actor":"gastown/polecats/nux","comment":"","created_at":"2026-02-27T17:41:26Z","event_type":"closed","id":4280,"issue_id":"gt-wisp-b2v8r","new_value":"Closed","old_value":""}
+{"actor":"gastown/polecats/nux","comment":"","created_at":"2026-02-27T17:41:42Z","event_type":"claimed","id":4281,"issue_id":"gt-wisp-8ch3f","new_value":"","old_value":""}
+{"actor":"gastown/polecats/furiosa","comment":"","created_at":"2026-02-27T17:42:22Z","event_type":"created","id":4282,"issue_id":"gt-wisp-1ucpg","new_value":"","old_value":""}
+{"actor":"gastown/refinery","comment":"","created_at":"2026-02-27T17:42:27Z","event_type":"closed","id":4283,"issue_id":"gt-wisp-1bmva","new_value":"Branch polecat/nux/gt-w0br@mm5n4urn no longer exists (polecat re-sessioned, current branch has no unique commits)","old_value":""}
+{"actor":"gastown/refinery","comment":"","created_at":"2026-02-27T17:42:28Z","event_type":"closed","id":4284,"issue_id":"gt-wisp-w0iaz","new_value":"Branch polecat/slit/gt-p7uq.1@mm5n51k0 no longer exists (polecat worktree removed, branch not on any remote)","old_value":""}
+{"actor":"gastown/witness","comment":"","created_at":"2026-02-27T17:44:20Z","event_type":"closed","id":4285,"issue_id":"gt-wisp-xekw6","new_value":"burned: polecat nuked","old_value":""}
+{"actor":"dog","comment":"","created_at":"2026-02-27T17:44:52Z","event_type":"created","id":4286,"issue_id":"gt-gastown-polecat-furiosa","new_value":"","old_value":""}
+{"actor":"dog","comment":"","created_at":"2026-02-27T17:44:54Z","event_type":"closed","id":4287,"issue_id":"gt-wisp-xekw6","new_value":"burned: force re-sling","old_value":""}
+{"actor":"gastown/refinery","comment":"","created_at":"2026-02-27T17:45:14Z","event_type":"closed","id":4288,"issue_id":"gt-wisp-1ucpg","new_value":"Merged to main at b45d1511","old_value":""}
+{"actor":"gastown/polecats/rictus","comment":"","created_at":"2026-02-27T17:48:28Z","event_type":"closed","id":4289,"issue_id":"gt-wisp-7yib3","new_value":"done","old_value":""}
+{"actor":"gastown/polecats/nux","comment":"","created_at":"2026-02-27T17:49:27Z","event_type":"closed","id":4290,"issue_id":"gt-wisp-8ch3f","new_value":"Closed","old_value":""}
+{"actor":"gastown/polecats/nux","comment":"","created_at":"2026-02-27T17:49:54Z","event_type":"closed","id":4291,"issue_id":"gt-wisp-81vbs","new_value":"Closed","old_value":""}
+{"actor":"mayor","comment":"","created_at":"2026-02-27T17:49:55Z","event_type":"closed","id":4292,"issue_id":"gt-wisp-spqdu","new_value":"burned: polecat nuked","old_value":""}
+{"actor":"mayor","comment":"","created_at":"2026-02-27T17:50:06Z","event_type":"created","id":4293,"issue_id":"gt-gastown-polecat-furiosa","new_value":"","old_value":""}
+{"actor":"gastown/polecats/nux","comment":"","created_at":"2026-02-27T17:50:10Z","event_type":"closed","id":4294,"issue_id":"gt-wisp-h9wak","new_value":"Closed","old_value":""}
+{"actor":"mayor","comment":"","created_at":"2026-02-27T17:50:16Z","event_type":"created","id":4295,"issue_id":"gt-gastown-polecat-slit","new_value":"","old_value":""}
+{"actor":"gastown/polecats/nux","comment":"","created_at":"2026-02-27T17:50:43Z","event_type":"closed","id":4296,"issue_id":"gt-wisp-bmeai","new_value":"Closed","old_value":""}
+{"actor":"gastown/polecats/nux","comment":"","created_at":"2026-02-27T17:50:55Z","event_type":"closed","id":4297,"issue_id":"gt-wisp-z0pfo","new_value":"Closed","old_value":""}
+{"actor":"gastown/polecats/nux","comment":"","created_at":"2026-02-27T17:51:07Z","event_type":"closed","id":4298,"issue_id":"gt-wisp-ygzue","new_value":"Closed","old_value":""}
+{"actor":"gastown/polecats/nux","comment":"","created_at":"2026-02-27T17:51:19Z","event_type":"closed","id":4299,"issue_id":"gt-wisp-52md4","new_value":"Closed","old_value":""}
+{"actor":"gastown/refinery","comment":"","created_at":"2026-02-27T17:51:23Z","event_type":"claimed","id":4300,"issue_id":"gt-wisp-3wqha","new_value":"","old_value":""}
+{"actor":"gastown/polecats/rictus","comment":"","created_at":"2026-02-27T17:51:26Z","event_type":"created","id":4301,"issue_id":"gt-wisp-6yryp","new_value":"","old_value":""}
+{"actor":"gastown/refinery","comment":"","created_at":"2026-02-27T17:51:28Z","event_type":"closed","id":4302,"issue_id":"gt-wisp-3wqha","new_value":"Closed","old_value":""}
+{"actor":"gastown/polecats/nux","comment":"","created_at":"2026-02-27T17:51:28Z","event_type":"created","id":4303,"issue_id":"gt-wisp-4gqph","new_value":"","old_value":""}
+{"actor":"gastown/polecats/nux","comment":"","created_at":"2026-02-27T17:51:31Z","event_type":"closed","id":4304,"issue_id":"gt-wisp-ufzcr","new_value":"done","old_value":""}
+{"actor":"gastown/refinery","comment":"","created_at":"2026-02-27T17:51:41Z","event_type":"claimed","id":4305,"issue_id":"gt-wisp-o7xbz","new_value":"","old_value":""}
+{"actor":"gastown/refinery","comment":"","created_at":"2026-02-27T17:51:47Z","event_type":"closed","id":4306,"issue_id":"gt-wisp-o7xbz","new_value":"Closed","old_value":""}
+{"actor":"gastown/refinery","comment":"","created_at":"2026-02-27T17:51:57Z","event_type":"claimed","id":4307,"issue_id":"gt-wisp-11x74","new_value":"","old_value":""}
+{"actor":"gastown/polecats/slit","comment":"","created_at":"2026-02-27T17:51:59Z","event_type":"closed","id":4308,"issue_id":"gt-wisp-4od8j","new_value":"Closed","old_value":""}
+{"actor":"gastown/polecats/slit","comment":"","created_at":"2026-02-27T17:52:08Z","event_type":"claimed","id":4309,"issue_id":"gt-wisp-booj6","new_value":"","old_value":""}
+{"actor":"gastown/polecats/slit","comment":"","created_at":"2026-02-27T17:52:18Z","event_type":"closed","id":4310,"issue_id":"gt-wisp-booj6","new_value":"Closed","old_value":""}
+{"actor":"gastown/witness","comment":"","created_at":"2026-02-27T17:52:18Z","event_type":"closed","id":4311,"issue_id":"gt-wisp-ufzcr","new_value":"burned: polecat nuked","old_value":""}
+{"actor":"gastown/witness","comment":"","created_at":"2026-02-27T17:52:23Z","event_type":"closed","id":4312,"issue_id":"gt-wisp-7yib3","new_value":"burned: polecat nuked","old_value":""}
+{"actor":"gastown/polecats/slit","comment":"","created_at":"2026-02-27T17:52:25Z","event_type":"claimed","id":4313,"issue_id":"gt-wisp-gn5op","new_value":"","old_value":""}
+{"actor":"gastown/polecats/slit","comment":"","created_at":"2026-02-27T17:52:35Z","event_type":"closed","id":4314,"issue_id":"gt-wisp-gn5op","new_value":"Closed","old_value":""}
+{"actor":"gastown/polecats/slit","comment":"","created_at":"2026-02-27T17:52:39Z","event_type":"claimed","id":4315,"issue_id":"gt-wisp-yrvlo","new_value":"","old_value":""}
+{"actor":"gastown/polecats/furiosa","comment":"","created_at":"2026-02-27T17:52:40Z","event_type":"closed","id":4316,"issue_id":"gt-wisp-m05xx","new_value":"Closed","old_value":""}
+{"actor":"gastown/polecats/furiosa","comment":"","created_at":"2026-02-27T17:53:05Z","event_type":"closed","id":4317,"issue_id":"gt-wisp-sung3","new_value":"Closed","old_value":""}
+{"actor":"gastown/polecats/furiosa","comment":"","created_at":"2026-02-27T17:53:26Z","event_type":"closed","id":4318,"issue_id":"gt-wisp-qd2st","new_value":"Closed","old_value":""}
+{"actor":"gastown/polecats/furiosa","comment":"","created_at":"2026-02-27T17:53:35Z","event_type":"claimed","id":4319,"issue_id":"gt-wisp-kkrtg","new_value":"","old_value":""}
+{"actor":"gastown/polecats/slit","comment":"","created_at":"2026-02-27T17:54:41Z","event_type":"closed","id":4320,"issue_id":"gt-wisp-yrvlo","new_value":"Closed","old_value":""}
+{"actor":"gastown/polecats/slit","comment":"","created_at":"2026-02-27T17:54:46Z","event_type":"claimed","id":4321,"issue_id":"gt-wisp-pxt5p","new_value":"","old_value":""}
+{"actor":"gastown/polecats/slit","comment":"","created_at":"2026-02-27T17:54:58Z","event_type":"closed","id":4322,"issue_id":"gt-wisp-pxt5p","new_value":"Closed","old_value":""}
+{"actor":"gastown/polecats/slit","comment":"","created_at":"2026-02-27T17:55:03Z","event_type":"claimed","id":4323,"issue_id":"gt-wisp-9vcb0","new_value":"","old_value":""}
+{"actor":"gastown/polecats/slit","comment":"","created_at":"2026-02-27T17:55:22Z","event_type":"closed","id":4324,"issue_id":"gt-wisp-9vcb0","new_value":"Closed","old_value":""}
+{"actor":"gastown/polecats/slit","comment":"","created_at":"2026-02-27T17:55:27Z","event_type":"claimed","id":4325,"issue_id":"gt-wisp-ewta5","new_value":"","old_value":""}
+{"actor":"gastown/polecats/slit","comment":"","created_at":"2026-02-27T17:55:59Z","event_type":"closed","id":4326,"issue_id":"gt-wisp-ewta5","new_value":"Closed","old_value":""}
+{"actor":"gastown/polecats/slit","comment":"","created_at":"2026-02-27T17:56:04Z","event_type":"claimed","id":4327,"issue_id":"gt-wisp-73ee3","new_value":"","old_value":""}
+{"actor":"gastown/polecats/slit","comment":"","created_at":"2026-02-27T17:56:07Z","event_type":"closed","id":4328,"issue_id":"gt-wisp-73ee3","new_value":"Closed","old_value":""}
