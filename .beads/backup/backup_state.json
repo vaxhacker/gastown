@@ -1,13 +1,13 @@
 {
-  "last_dolt_commit": "unhfuvbppk5sho8ht1icv140h76k2q04",
+  "last_dolt_commit": "6tnijdg3g9rusfqhtor1sor2pktspp4l",
   "last_event_id": 11612,
-  "timestamp": "2026-02-28T20:20:20.553570742Z",
+  "timestamp": "2026-02-28T20:37:14.489581319Z",
   "counts": {
-    "issues": 328,
+    "issues": 84,
     "events": 10313,
     "comments": 0,
-    "dependencies": 312,
-    "labels": 10,
+    "dependencies": 65,
+    "labels": 9,
     "config": 13
   }
 }
