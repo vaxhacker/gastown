@@ -1437,7 +1437,7 @@ func (t *Tmux) AcceptWorkspaceTrustDialog(session string) error {
 	}
 
 	// Look for characteristic trust dialog text
-	if !strings.Contains(content, "trust this folder") && !strings.Contains(content, "Quick safety check") {
+	if !strings.Contains(content, "trust this folder") && !strings.Contains(content, "Quick safety check") && !strings.Contains(content, "Do you trust the files in this folder?") {
 		// Trust dialog not present, nothing to do
 		return nil
 	}

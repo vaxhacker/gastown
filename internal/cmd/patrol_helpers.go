@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"os/exec"
+	"sort"
 	"strings"
 
 	"github.com/steveyegge/gastown/internal/beads"
@@ -54,35 +55,69 @@ func findActivePatrol(cfg PatrolConfig) (patrolID, patrolLine string, found bool
 	}
 
 	// First pass: identify active patrol and collect stale ones for cleanup.
-	// We process ALL hooked patrols to clean up accumulated orphans (~100
-	// stale patrols can build up over ~12 hours).
-	var activeBead *beads.Issue
-	var staleIDs []string
-	var skipped int // tracks patrols skipped due to child-listing errors
+	// We process ALL hooked patrols to clean up accumulated orphans.
+	var candidates []*beads.Issue
+	var skipped int
 
 	for _, bead := range hookedBeads {
 		if !strings.HasPrefix(bead.Title, cfg.PatrolMolName) {
 			continue
 		}
+		candidates = append(candidates, bead)
+	}
 
+	if len(candidates) == 0 {
+		return "", "", false, nil
+	}
+
+	// Sort candidates by CreatedAt descending (newest first)
+	sort.Slice(candidates, func(i, j int) bool {
+		return candidates[i].CreatedAt > candidates[j].CreatedAt
+	})
+
+	var newestWithOpen *beads.Issue
+	var newestWithoutOpen *beads.Issue
+	var staleIDs []string
+
+	for _, bead := range candidates {
 		hasOpen, err := checkHasOpenChildren(b, bead.ID)
 		if err != nil {
-			// Transient error — skip this bead entirely to avoid
-			// destructive cleanup of a potentially active patrol.
 			style.PrintWarning("could not check children for %s: %v", bead.ID, err)
 			skipped++
 			continue
 		}
 
-		if !hasOpen {
-			// Stale patrol (no open children) — mark for cleanup
-			staleIDs = append(staleIDs, bead.ID)
-		} else if activeBead == nil {
-			// First active patrol found — this is the one we'll resume
-			activeBead = bead
+		if hasOpen {
+			if newestWithOpen == nil {
+				newestWithOpen = bead
+			} else {
+				// Older patrol with open steps - stale
+				staleIDs = append(staleIDs, bead.ID)
+			}
+		} else {
+			if newestWithoutOpen == nil {
+				newestWithoutOpen = bead
+			} else {
+				// Older patrol with no open steps - stale
+				staleIDs = append(staleIDs, bead.ID)
+			}
 		}
-		// else: has open children but we already found an active patrol —
-		// leave it alone to avoid destroying a potentially running patrol
+	}
+
+	var activeBead *beads.Issue
+	if newestWithOpen != nil {
+		activeBead = newestWithOpen
+		// If we found an even newer patrol but it has no open steps,
+		// it's likely a duplicate or just-finished one. Since we
+		// found an older one with open steps, the older one is
+		// more likely the one the agent is actually working on.
+		if newestWithoutOpen != nil {
+			staleIDs = append(staleIDs, newestWithoutOpen.ID)
+		}
+	} else if newestWithoutOpen != nil {
+		// No patrols with open steps - pick the newest one without open steps
+		// (this supports the 'report completed patrol' workflow)
+		activeBead = newestWithoutOpen
 	}
 
 	// Clean up all stale patrols
