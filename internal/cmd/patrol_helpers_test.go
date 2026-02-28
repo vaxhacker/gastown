@@ -566,17 +566,17 @@ func TestFindActivePatrolStale(t *testing.T) {
 	if findErr != nil {
 		t.Fatalf("findActivePatrol error: %v", findErr)
 	}
-	if found {
-		t.Fatal("expected stale patrol (all children closed) to NOT be found as active")
+	if !found {
+		t.Fatal("expected stale patrol (all children closed) to still be found as active (to support reporting)")
 	}
 
-	// Verify the stale patrol was closed
+	// Verify the patrol was NOT closed (it's the active one)
 	issue, err := b.Show(rootID)
 	if err != nil {
 		t.Fatalf("show patrol: %v", err)
 	}
-	if issue.Status != "closed" {
-		t.Errorf("stale patrol status = %q, want %q", issue.Status, "closed")
+	if issue.Status != "hooked" {
+		t.Errorf("active patrol status = %q, want %q", issue.Status, "hooked")
 	}
 }
 

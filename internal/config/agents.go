@@ -190,23 +190,20 @@ var builtinPresets = map[AgentPreset]*AgentPresetInfo{
 		Name:                AgentGemini,
 		Command:             "gemini",
 		Args:                []string{"--approval-mode", "yolo"},
-		ProcessNames:        []string{"gemini"}, // Gemini CLI binary
+		ProcessNames:        []string{"node", "gemini"}, // Gemini CLI binary
 		SessionIDEnv:        "GEMINI_SESSION_ID",
 		ResumeFlag:          "--resume",
 		ResumeStyle:         "flag",
 		SupportsHooks:       true,
 		SupportsForkSession: false,
-		NonInteractive: &NonInteractiveConfig{
-			PromptFlag: "-p",
-			OutputFlag: "--output-format json",
-		},
+		NonInteractive:      nil,
 		// Runtime defaults
 		PromptMode:        "arg",
 		ConfigDir:         ".gemini",
 		HooksProvider:     "gemini",
 		HooksDir:          ".gemini",
 		HooksSettingsFile: "settings.json",
-		ReadyDelayMs:      5000,
+		ReadyDelayMs:      10000,
 		InstructionsFile:  "AGENTS.md",
 	},
 	AgentCodex: {

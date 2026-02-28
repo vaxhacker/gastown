@@ -250,15 +250,15 @@ func TestGeminiProviderDefaults(t *testing.T) {
 
 	t.Run("defaultProcessNames", func(t *testing.T) {
 		names := defaultProcessNames("gemini", "gemini")
-		if len(names) != 1 || names[0] != "gemini" {
-			t.Errorf("defaultProcessNames(gemini) = %v, want [gemini]", names)
+		if len(names) != 2 || names[0] != "node" || names[1] != "gemini" {
+			t.Errorf("defaultProcessNames(gemini) = %v, want [node gemini]", names)
 		}
 	})
 
 	t.Run("defaultReadyDelayMs", func(t *testing.T) {
 		delay := defaultReadyDelayMs("gemini")
-		if delay != 5000 {
-			t.Errorf("defaultReadyDelayMs(gemini) = %d, want 5000", delay)
+		if delay != 10000 {
+			t.Errorf("defaultReadyDelayMs(gemini) = %d, want 10000", delay)
 		}
 	})
 
