@@ -350,7 +350,7 @@ func (c *AgentBeadsCheck) Fix(ctx *CheckContext) error {
 		}
 
 		librarianID := beads.LibrarianBeadIDWithPrefix(prefix, rigName)
-		if err := fixAgentBead(bd, librarianID,
+		if err := fixAgentBead(bd, rigBeadsPath, librarianID,
 			fmt.Sprintf("Librarian for %s - docs and knowledge operations specialist.", rigName),
 			&beads.AgentFields{RoleType: "librarian", Rig: rigName, AgentState: "idle"},
 		); err != nil {
