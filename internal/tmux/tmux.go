@@ -1469,20 +1469,7 @@ func (t *Tmux) AcceptWorkspaceTrustDialog(session string) error {
 		time.Sleep(constants.DialogPollInterval)
 	}
 
-	// Look for characteristic trust dialog text
-	if !strings.Contains(content, "trust this folder") && !strings.Contains(content, "Quick safety check") && !strings.Contains(content, "Do you trust the files in this folder?") {
-		// Trust dialog not present, nothing to do
-		return nil
-	}
-
-	// Option 1 ("Yes, I trust this folder") is already pre-selected, just press Enter
-	if _, err := t.run("send-keys", "-t", session, "Enter"); err != nil {
-		return err
-	}
-
-	// Wait for dialog to dismiss before proceeding to bypass permissions
-	time.Sleep(500 * time.Millisecond)
-
+	// Timeout — no dialog detected, safe to proceed
 	return nil
 }
 
