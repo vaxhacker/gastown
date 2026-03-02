@@ -57,8 +57,7 @@
 {"issue_id":"gt-gastown-polecat-toast","label":"gt:agent"}
 {"issue_id":"gt-gastown-polecat-valkyrie","label":"gt:agent"}
 {"issue_id":"gt-gastown-refinery","label":"gt:agent"}
-{"issue_id":"gt-gastown-refinery","label":"idle:2"}
-{"issue_id":"gt-gastown-refinery","label":"idle:7"}
+{"issue_id":"gt-gastown-refinery","label":"idle:10"}
 {"issue_id":"gt-gastown-witness","label":"gt:agent"}
 {"issue_id":"gt-gow8b","label":"design"}
 {"issue_id":"gt-gow8b","label":"hooks"}
@@ -75,7 +74,7 @@
 {"issue_id":"gt-idrl","label":"zfc-violation"}
 {"issue_id":"gt-j1m5v","label":"design"}
 {"issue_id":"gt-j1m5v","label":"feature"}
-{"issue_id":"gt-j3cx","label":"idle:3"}
+{"issue_id":"gt-j3cx","label":"idle:4"}
 {"issue_id":"gt-l5js","label":"bug"}
 {"issue_id":"gt-l5js","label":"p1"}
 {"issue_id":"gt-l7uq","label":"zfc-violation"}
@@ -107,7 +106,9 @@
 {"issue_id":"gt-qzjb","label":"cleanup"}
 {"issue_id":"gt-rcrt","label":"zfc-violation"}
 {"issue_id":"gt-re2y","label":"zfc-violation"}
+{"issue_id":"gt-rig-gastown","label":"auto_restart:false"}
 {"issue_id":"gt-rig-gastown","label":"gt:rig"}
+{"issue_id":"gt-rig-gastown","label":"status:docked"}
 {"issue_id":"gt-s4fcs","label":"seance"}
 {"issue_id":"gt-s4fcs","label":"ux"}
 {"issue_id":"gt-td6p","label":"formula"}
@@ -125,6 +126,8 @@
 {"issue_id":"gt-wisp-4gqph","label":"gt:merge-request"}
 {"issue_id":"gt-wisp-5avt0","label":"gt:merge-request"}
 {"issue_id":"gt-wisp-5iasc","label":"gt:merge-request"}
+{"issue_id":"gt-wisp-5zp9","label":"backoff-until:1772404290"}
+{"issue_id":"gt-wisp-5zp9","label":"idle:4"}
 {"issue_id":"gt-wisp-6yryp","label":"gt:merge-request"}
 {"issue_id":"gt-wisp-71ha","label":"gt:merge-request"}
 {"issue_id":"gt-wisp-9bzu1","label":"gt:merge-request"}
