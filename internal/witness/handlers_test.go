@@ -1393,6 +1393,48 @@ func TestFindMRBeadForBranch_NoBdAvailable(t *testing.T) {
 	}
 }
 
+func TestFindMRBeadForBranch_UsesQuotedLabelQuery(t *testing.T) {
+	t.Parallel()
+
+	bd, mock := mockBd(
+		func(args []string) (string, error) {
+			return "[]", nil
+		},
+		func(args []string) error { return nil },
+	)
+
+	_ = findMRBeadForBranch(bd, t.TempDir(), "polecat/coma/hq-6vd0o")
+
+	if len(mock.calls) == 0 {
+		t.Fatal("expected bd query call")
+	}
+
+	got := mock.calls[0]
+	want := `query ephemeral=true AND label="gt:merge-request" AND status="open" --json`
+	if got != want {
+		t.Fatalf("query = %q, want %q", got, want)
+	}
+}
+
+func TestFindMRBeadForBranch_MatchesExactBranch(t *testing.T) {
+	t.Parallel()
+
+	bd, _ := mockBd(
+		func(args []string) (string, error) {
+			return `[
+{"id":"gt-mr-one","description":"branch: polecat/other/hq-1\ntarget: main\nsource_issue: hq-1\nrig: circletest"},
+{"id":"gt-mr-two","description":"branch: polecat/coma/hq-6vd0o\ntarget: main\nsource_issue: hq-6vd0o\nrig: circletest"}
+]`, nil
+		},
+		func(args []string) error { return nil },
+	)
+
+	got := findMRBeadForBranch(bd, t.TempDir(), "polecat/coma/hq-6vd0o")
+	if got != "gt-mr-two" {
+		t.Fatalf("findMRBeadForBranch() = %q, want %q", got, "gt-mr-two")
+	}
+}
+
 func TestDetectOrphanedMolecules_WithMockBd(t *testing.T) {
 	installFakeTmuxNoServer(t)
 

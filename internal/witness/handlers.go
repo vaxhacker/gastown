@@ -593,7 +593,7 @@ func findMRBeadForBranch(bd *BdCli, workDir, branch string) string {
 	// MR beads live (GH#2446). "bd list --type=merge-request" only searches
 	// the issues table and misses wisps.
 	output, err := bd.Exec(workDir, "query",
-		"ephemeral=true AND label=gt:merge-request AND status=open",
+		`ephemeral=true AND label="gt:merge-request" AND status="open"`,
 		"--json")
 	if err != nil || output == "" || output == "[]" || output == "null" {
 		return ""
