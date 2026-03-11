@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -657,28 +658,7 @@ func (b *Beads) List(opts ListOptions) ([]*Issue, error) {
 // not support an --ephemeral flag. Wisps (ephemeral issues like merge-request
 // beads) live in a separate table since beads v0.59.
 func (b *Beads) listEphemeral(opts ListOptions) ([]*Issue, error) {
-	// Build query expression: ephemeral=true AND <filters>
-	clauses := []string{"ephemeral=true"}
-
-	if opts.Label != "" {
-		clauses = append(clauses, "label="+opts.Label)
-	} else if opts.Type != "" {
-		clauses = append(clauses, "label=gt:"+opts.Type)
-	}
-	if opts.Status != "" && opts.Status != "all" {
-		clauses = append(clauses, "status="+opts.Status)
-	}
-	if opts.Priority >= 0 {
-		clauses = append(clauses, fmt.Sprintf("priority=%d", opts.Priority))
-	}
-	if opts.Parent != "" {
-		clauses = append(clauses, "parent="+opts.Parent)
-	}
-	if opts.Assignee != "" {
-		clauses = append(clauses, "assignee="+opts.Assignee)
-	}
-
-	queryExpr := strings.Join(clauses, " AND ")
+	queryExpr := buildEphemeralQueryExpr(opts)
 	args := []string{"query", "--json", queryExpr}
 
 	if opts.Status == "all" {
@@ -703,6 +683,35 @@ func (b *Beads) listEphemeral(opts ListOptions) ([]*Issue, error) {
 	}
 
 	return issues, nil
+}
+
+func buildEphemeralQueryExpr(opts ListOptions) string {
+	// Build query expression: ephemeral=true AND <filters>
+	clauses := []string{"ephemeral=true"}
+
+	if opts.Label != "" {
+		clauses = append(clauses, "label="+queryStringLiteral(opts.Label))
+	} else if opts.Type != "" {
+		clauses = append(clauses, "label="+queryStringLiteral("gt:"+opts.Type))
+	}
+	if opts.Status != "" && opts.Status != "all" {
+		clauses = append(clauses, "status="+queryStringLiteral(opts.Status))
+	}
+	if opts.Priority >= 0 {
+		clauses = append(clauses, fmt.Sprintf("priority=%d", opts.Priority))
+	}
+	if opts.Parent != "" {
+		clauses = append(clauses, "parent="+queryStringLiteral(opts.Parent))
+	}
+	if opts.Assignee != "" {
+		clauses = append(clauses, "assignee="+queryStringLiteral(opts.Assignee))
+	}
+
+	return strings.Join(clauses, " AND ")
+}
+
+func queryStringLiteral(value string) string {
+	return strconv.Quote(value)
 }
 
 // isJSONBytes returns true if the byte slice starts with [ or { (after whitespace).
