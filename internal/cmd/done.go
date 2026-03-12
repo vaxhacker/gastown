@@ -298,32 +298,33 @@ func runDone(cmd *cobra.Command, args []string) (retErr error) {
 		// Sessions stay alive after gt done — polecat transitions to IDLE.
 	}
 
-	// If issue ID not set by flag or branch name, query for hooked beads
-	// assigned to this agent. This replaces reading agent_bead.hook_bead
-	// (hq-l6mm5: direct bead tracking instead of agent bead slot).
-	if issueID == "" && sender != "" {
-		bd := beads.New(cwd)
-		if hookIssue := findHookedBeadForAgent(bd, sender); hookIssue != "" {
-			issueID = hookIssue
-		}
-	}
-
-	// Write done-intent label EARLY, before push/MR operations.
-	// If gt done crashes after this point, the Witness can detect the intent
-	// and auto-nuke the zombie polecat.
-	//
-	// Also read existing checkpoints for resume capability (gt-aufru).
-	// If gt done was interrupted (SIGTERM, context exhaustion, SIGKILL),
-	// checkpoints indicate which stages completed. On re-invocation, we
-	// skip those stages to avoid repeating work or hitting errors.
 	checkpoints := map[DoneCheckpoint]string{}
-	if agentBeadID != "" {
+	doneIntentArmed := false
+	armDoneIntent := func() {
+		if doneIntentArmed || agentBeadID == "" {
+			return
+		}
+		// Write done-intent label before side-effecting completion operations.
+		// If gt done crashes after this point, the Witness can detect the intent
+		// and auto-nuke the zombie polecat.
+		//
+		// Also read existing checkpoints for resume capability (gt-aufru).
+		// If gt done was interrupted (SIGTERM, context exhaustion, SIGKILL),
+		// checkpoints indicate which stages completed. On re-invocation, we
+		// skip those stages to avoid repeating work or hitting errors.
 		bd := beads.New(cwd)
 		setDoneIntentLabel(bd, agentBeadID, exitType)
 		checkpoints = readDoneCheckpoints(bd, agentBeadID)
 		if len(checkpoints) > 0 {
 			fmt.Printf("%s Resuming gt done from checkpoint (previous run was interrupted)\n", style.Bold.Render("→"))
 		}
+		doneIntentArmed = true
+	}
+
+	// For non-COMPLETED exits there is no "uncommitted changes would be lost"
+	// preflight gate, so we can arm done-intent immediately.
+	if exitType != ExitCompleted {
+		armDoneIntent()
 	}
 
 	// Write heartbeat state="exiting" (gt-3vr5: heartbeat v2).
@@ -375,6 +376,21 @@ func runDone(cmd *cobra.Command, args []string) (retErr error) {
 		if workStatus.HasUncommittedChanges && !workStatus.CleanExcludingRuntime() {
 			return fmt.Errorf("cannot complete: uncommitted changes would be lost\nCommit your changes first, or use --status DEFERRED to exit without completing\nUncommitted: %s", workStatus.String())
 		}
+
+		// If issue ID not set by flag or branch name, query for hooked beads
+		// assigned to this agent. This replaces reading agent_bead.hook_bead
+		// (hq-l6mm5: direct bead tracking instead of agent bead slot).
+		if issueID == "" && sender != "" {
+			bd := beads.New(cwd)
+			if hookIssue := findHookedBeadForAgent(bd, sender); hookIssue != "" {
+				issueID = hookIssue
+			}
+		}
+
+		// Arm done-intent only after git preflight validates there are no
+		// blocking uncommitted changes. This avoids mutating tracked .beads
+		// files (like last-touched) before cleanliness checks.
+		armDoneIntent()
 
 		// Check if branch has commits ahead of origin/default
 		// If not, work may have been pushed directly to main - that's fine, just skip MR
