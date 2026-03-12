@@ -2,6 +2,9 @@ package reaper
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 )
@@ -30,6 +33,10 @@ func TestValidateDBName(t *testing.T) {
 }
 
 func TestDefaultDatabases(t *testing.T) {
+	want := []string{"circletest", "hq", "oc", "octagonmud"}
+	if !reflect.DeepEqual(DefaultDatabases, want) {
+		t.Fatalf("DefaultDatabases = %v, want %v", DefaultDatabases, want)
+	}
 	if len(DefaultDatabases) == 0 {
 		t.Error("DefaultDatabases should not be empty")
 	}
@@ -37,6 +44,22 @@ func TestDefaultDatabases(t *testing.T) {
 		if err := ValidateDBName(db); err != nil {
 			t.Errorf("DefaultDatabases contains invalid name %q: %v", db, err)
 		}
+	}
+}
+
+func TestCompactorPluginDefaultsStayInSync(t *testing.T) {
+	scriptPath := filepath.Join("..", "..", "plugins", "compactor-dog", "run.sh")
+	content, err := os.ReadFile(scriptPath)
+	if err != nil {
+		t.Fatalf("read plugin script: %v", err)
+	}
+
+	wantCSV := strings.Join(DefaultDatabases, ",")
+	if !strings.Contains(string(content), `DEFAULT_DBS="`+wantCSV+`"`) {
+		t.Fatalf("plugin DEFAULT_DBS does not match DefaultDatabases=%q", wantCSV)
+	}
+	if !strings.Contains(string(content), "default: "+wantCSV) {
+		t.Fatalf("plugin help text does not match DefaultDatabases=%q", wantCSV)
 	}
 }
 
@@ -182,12 +205,12 @@ func TestReapExcludesAgentBeads(t *testing.T) {
 	// by checking the source code pattern.
 	// This is a compile-time guard — if the exclusion is removed, this test
 	// will fail when the query pattern doesn't match.
-	
+
 	// The whereClause in Reap() should contain:
 	// "w.issue_type != 'agent'"
 	// This test documents the expected behavior; actual exclusion is tested
 	// in integration tests with a real database.
-	
+
 	// Integration test would require spinning up a Dolt server, which is
 	// beyond the scope of this unit test. The exclusion is verified manually
 	// by checking that agent beads are not closed by the wisp_reaper patrol.

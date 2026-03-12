@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/steveyegge/gastown/internal/constants"
+	"github.com/steveyegge/gastown/internal/reaper"
 )
 
 // Operational constants — timeouts needed to perform checks.
@@ -15,9 +16,9 @@ const (
 // Default advisory thresholds — used for recommendations in the report.
 // These are defaults; override via DoctorDogConfig fields.
 const (
-	defaultDoctorDogLatencyAlertMs      = 5000.0
-	defaultDoctorDogOrphanAlertCount    = 20
-	defaultDoctorDogBackupStaleSeconds  = 3600.0
+	defaultDoctorDogLatencyAlertMs     = 5000.0
+	defaultDoctorDogOrphanAlertCount   = 20
+	defaultDoctorDogBackupStaleSeconds = 3600.0
 )
 
 // DoctorDogConfig holds configuration for the doctor_dog patrol.
@@ -86,7 +87,7 @@ func doctorDogDatabases(config *DaemonPatrolConfig) []string {
 			return config.Patrols.DoctorDog.Databases
 		}
 	}
-	return []string{"hq", "bd", "gt", "sky", "wy", "beads_hop"}
+	return append([]string(nil), reaper.DefaultDatabases...)
 }
 
 // runDoctorDog pours a mol-dog-doctor molecule for agent execution.

@@ -15,6 +15,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/steveyegge/gastown/internal/doltserver"
 	"github.com/steveyegge/gastown/internal/health"
+	"github.com/steveyegge/gastown/internal/reaper"
 	"github.com/steveyegge/gastown/internal/style"
 	"github.com/steveyegge/gastown/internal/workspace"
 )
@@ -25,24 +26,24 @@ var (
 
 // HealthReport is the machine-readable output of gt health --json.
 type HealthReport struct {
-	Timestamp string              `json:"timestamp"`
-	Server    *ServerHealth       `json:"server"`
-	Databases []DatabaseHealth    `json:"databases"`
-	Pollution []PollutionRecord   `json:"pollution,omitempty"`
-	Backups   *BackupHealth       `json:"backups"`
-	Processes *ProcessHealth      `json:"processes"`
-	Orphans   []OrphanDB          `json:"orphans,omitempty"`
+	Timestamp string            `json:"timestamp"`
+	Server    *ServerHealth     `json:"server"`
+	Databases []DatabaseHealth  `json:"databases"`
+	Pollution []PollutionRecord `json:"pollution,omitempty"`
+	Backups   *BackupHealth     `json:"backups"`
+	Processes *ProcessHealth    `json:"processes"`
+	Orphans   []OrphanDB        `json:"orphans,omitempty"`
 }
 
 type ServerHealth struct {
-	Running        bool          `json:"running"`
-	PID            int           `json:"pid,omitempty"`
-	Port           int           `json:"port,omitempty"`
-	LatencyMs      int64         `json:"latency_ms,omitempty"`
-	Connections    int           `json:"connections,omitempty"`
-	MaxConnections int           `json:"max_connections,omitempty"`
-	DiskUsageBytes int64         `json:"disk_usage_bytes,omitempty"`
-	DiskUsageHuman string        `json:"disk_usage_human,omitempty"`
+	Running        bool   `json:"running"`
+	PID            int    `json:"pid,omitempty"`
+	Port           int    `json:"port,omitempty"`
+	LatencyMs      int64  `json:"latency_ms,omitempty"`
+	Connections    int    `json:"connections,omitempty"`
+	MaxConnections int    `json:"max_connections,omitempty"`
+	DiskUsageBytes int64  `json:"disk_usage_bytes,omitempty"`
+	DiskUsageHuman string `json:"disk_usage_human,omitempty"`
 }
 
 type DatabaseHealth struct {
@@ -62,12 +63,12 @@ type PollutionRecord struct {
 }
 
 type BackupHealth struct {
-	DoltFreshness  string `json:"dolt_freshness,omitempty"`
-	DoltAgeSeconds int    `json:"dolt_age_seconds,omitempty"`
-	DoltStale      bool   `json:"dolt_stale"`
-	JSONLFreshness string `json:"jsonl_freshness,omitempty"`
-	JSONLAgeSeconds int   `json:"jsonl_age_seconds,omitempty"`
-	JSONLStale     bool   `json:"jsonl_stale"`
+	DoltFreshness   string `json:"dolt_freshness,omitempty"`
+	DoltAgeSeconds  int    `json:"dolt_age_seconds,omitempty"`
+	DoltStale       bool   `json:"dolt_stale"`
+	JSONLFreshness  string `json:"jsonl_freshness,omitempty"`
+	JSONLAgeSeconds int    `json:"jsonl_age_seconds,omitempty"`
+	JSONLStale      bool   `json:"jsonl_stale"`
 }
 
 type ProcessHealth struct {
@@ -171,8 +172,12 @@ func checkServerHealth(townRoot string) *ServerHealth {
 	return sh
 }
 
+func productionDatabases() []string {
+	return append([]string(nil), reaper.DefaultDatabases...)
+}
+
 func checkDatabaseHealth(port int) []DatabaseHealth {
-	productionDBs := []string{"hq", "bd", "gt"}
+	productionDBs := productionDatabases()
 	var results []DatabaseHealth
 
 	for _, dbName := range productionDBs {
@@ -208,7 +213,7 @@ func checkDatabaseHealth(port int) []DatabaseHealth {
 }
 
 func checkPollution(port int) []PollutionRecord {
-	productionDBs := []string{"hq", "bd", "gt"}
+	productionDBs := productionDatabases()
 	var records []PollutionRecord
 
 	// Known pollution patterns to check in the issues table.

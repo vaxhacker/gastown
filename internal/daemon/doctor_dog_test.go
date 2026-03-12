@@ -2,8 +2,11 @@ package daemon
 
 import (
 	"encoding/json"
+	"reflect"
 	"testing"
 	"time"
+
+	"github.com/steveyegge/gastown/internal/reaper"
 )
 
 func TestDoctorDogInterval(t *testing.T) {
@@ -35,8 +38,8 @@ func TestDoctorDogInterval(t *testing.T) {
 func TestDoctorDogDatabases(t *testing.T) {
 	// Default databases
 	dbs := doctorDogDatabases(nil)
-	if len(dbs) != 6 {
-		t.Errorf("expected 6 default databases, got %d", len(dbs))
+	if !reflect.DeepEqual(dbs, reaper.DefaultDatabases) {
+		t.Fatalf("doctorDogDatabases(nil) = %v, want %v", dbs, reaper.DefaultDatabases)
 	}
 
 	// Custom databases
