@@ -787,6 +787,20 @@ type GitState struct {
 	StashCount       int      `json:"stash_count"`
 }
 
+// isBeadsRuntimePath returns true for .beads runtime artifacts in a polecat worktree.
+// These files are managed by Gas Town and should not be treated as user work.
+func isBeadsRuntimePath(path string) bool {
+	path = strings.Trim(strings.TrimSpace(path), "\"")
+	bare := strings.TrimSuffix(strings.TrimSuffix(path, "/"), "\\")
+	if bare == ".beads" {
+		return true
+	}
+	return strings.HasPrefix(path, ".beads/") ||
+		strings.HasPrefix(path, ".beads\\") ||
+		strings.Contains(path, "/.beads/") ||
+		strings.Contains(path, "\\.beads\\")
+}
+
 func runPolecatGitState(cmd *cobra.Command, args []string) error {
 	rigName, polecatName, err := parseAddress(args[0])
 	if err != nil {
@@ -857,6 +871,8 @@ func runPolecatGitState(cmd *cobra.Command, args []string) error {
 }
 
 // getGitState checks the git state of a worktree.
+// .beads runtime artifacts are ignored because redirected/server-backed polecats
+// can accumulate local beads state that is not user-authored work.
 func getGitState(worktreePath string) (*GitState, error) {
 	state := &GitState{
 		Clean:            true,
@@ -875,14 +891,19 @@ func getGitState(worktreePath string) (*GitState, error) {
 		for _, line := range lines {
 			if line != "" {
 				// Extract filename (skip the status prefix)
+				path := line
 				if len(line) > 3 {
-					state.UncommittedFiles = append(state.UncommittedFiles, line[3:])
-				} else {
-					state.UncommittedFiles = append(state.UncommittedFiles, line)
+					path = line[3:]
 				}
+				if isBeadsRuntimePath(path) {
+					continue
+				}
+				state.UncommittedFiles = append(state.UncommittedFiles, path)
 			}
 		}
-		state.Clean = false
+		if len(state.UncommittedFiles) > 0 {
+			state.Clean = false
+		}
 	}
 
 	// Check for unpushed commits (git log origin/main..HEAD)

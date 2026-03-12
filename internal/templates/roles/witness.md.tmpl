@@ -120,10 +120,18 @@ gt mail send mayor/ -s "Subject" -m "Message"  # Send to Mayor
 
 ### Git Verification (for cleanup)
 ```bash
-cd {{ .TownRoot }}/{{ .RigName }}/polecats/<name>
-git status --porcelain                   # Must be empty for clean
-git log origin/main..HEAD                # Check for unpushed commits
+gt polecat git-state {{ .RigName }}/<name> --json
+gt polecat check-recovery {{ .RigName }}/<name> --json
 ```
+
+### Redirected Beads Health
+```bash
+cd {{ .TownRoot }}/{{ .RigName }}/polecats/<name>/{{ .RigName }}
+bd context --json
+```
+If `is_redirected=true` and `dolt_mode=server`, treat worktree-local `.beads/`
+artifacts as non-authoritative. Do NOT inspect `.beads/dolt/*` directly to infer
+live data health or possible data loss.
 
 ### Beads (read-mostly)
 ```bash
