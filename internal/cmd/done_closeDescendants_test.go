@@ -771,6 +771,101 @@ exit 0
 	}
 }
 
+func TestUpdateAgentStateOnDone_DeferredClosesStaleHookedWisp(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("shell script bd stub not supported on Windows")
+	}
+
+	townRoot := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(townRoot, "mayor"), 0755); err != nil {
+		t.Fatalf("mkdir mayor: %v", err)
+	}
+	beadsDir := filepath.Join(townRoot, ".beads")
+	if err := os.MkdirAll(filepath.Join(beadsDir, "locks"), 0755); err != nil {
+		t.Fatalf("mkdir .beads/locks: %v", err)
+	}
+	if err := os.MkdirAll(filepath.Join(townRoot, "gastown"), 0755); err != nil {
+		t.Fatalf("mkdir gastown: %v", err)
+	}
+	routes := strings.Join([]string{
+		`{"prefix":"gt-","path":"gastown"}`,
+		"",
+	}, "\n")
+	if err := os.WriteFile(filepath.Join(beadsDir, "routes.jsonl"), []byte(routes), 0644); err != nil {
+		t.Fatalf("write routes.jsonl: %v", err)
+	}
+
+	binDir := filepath.Join(townRoot, "bin")
+	if err := os.MkdirAll(binDir, 0755); err != nil {
+		t.Fatalf("mkdir bin: %v", err)
+	}
+	closesLog := filepath.Join(townRoot, "closes.log")
+
+	bdScript := fmt.Sprintf(`#!/bin/sh
+while [ "$1" = "--allow-stale" ]; do shift; done
+cmd="$1"
+shift || true
+case "$cmd" in
+  show)
+    beadID="$1"
+    case "$beadID" in
+      gt-gastown-polecat-nux)
+        echo '[{"id":"gt-gastown-polecat-nux","title":"Polecat nux","status":"open","hook_bead":"gt-wisp-stale","agent_state":"working"}]'
+        ;;
+      gt-wisp-stale)
+        echo '[{"id":"gt-wisp-stale","title":"stale crash wisp","status":"hooked","ephemeral":true}]'
+        ;;
+    esac
+    ;;
+  list)
+    echo '[]'
+    ;;
+  close)
+    for arg in "$@"; do
+      case "$arg" in --*) continue ;; esac
+      echo "$arg" >> "%s"
+    done
+    ;;
+  agent|update|slot)
+    exit 0
+    ;;
+esac
+exit 0
+`, closesLog)
+
+	bdPath := filepath.Join(binDir, "bd")
+	if err := os.WriteFile(bdPath, []byte(bdScript), 0755); err != nil {
+		t.Fatalf("write bd stub: %v", err)
+	}
+
+	t.Setenv("PATH", binDir+string(os.PathListSeparator)+os.Getenv("PATH"))
+	t.Setenv("GT_ROLE", "polecat")
+	t.Setenv("GT_RIG", "gastown")
+	t.Setenv("GT_POLECAT", "nux")
+	t.Setenv("GT_CREW", "")
+	t.Setenv("TMUX_PANE", "")
+
+	cwd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("getwd: %v", err)
+	}
+	t.Cleanup(func() { _ = os.Chdir(cwd) })
+	if err := os.Chdir(filepath.Join(townRoot, "gastown")); err != nil {
+		t.Fatalf("chdir: %v", err)
+	}
+
+	updateAgentStateOnDone(filepath.Join(townRoot, "gastown"), townRoot, ExitDeferred, "gt-wisp-stale")
+
+	closesBytes, err := os.ReadFile(closesLog)
+	if err != nil {
+		t.Fatalf("expected stale wisp to be closed, read closes log: %v", err)
+	}
+	closes := string(closesBytes)
+	if !strings.Contains(closes, "gt-wisp-stale") {
+		t.Fatalf("stale wisp was not closed on deferred exit\nClose calls:\n%s", closes)
+	}
+}
+
 // TestCloseDescendantsHandlesListError verifies that closeDescendants handles
 // errors from b.List gracefully and continues with closing what it can.
 func TestCloseDescendantsHandlesListError(t *testing.T) {

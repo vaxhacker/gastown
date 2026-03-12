@@ -82,6 +82,20 @@ func init() {
 	rootCmd.AddCommand(doneCmd)
 }
 
+// newDoneBeads resolves a safe beads handle for gt done operations.
+// If redirect resolution points to a missing target, fallback to cwd/.beads
+// so completion flow can proceed without mutating unrelated paths.
+func newDoneBeads(cwd string) *beads.Beads {
+	if cwd == "" {
+		return beads.New(cwd)
+	}
+	resolved := beads.ResolveBeadsDir(cwd)
+	if _, err := os.Stat(resolved); err == nil {
+		return beads.NewWithBeadsDir(cwd, resolved)
+	}
+	return beads.NewWithBeadsDir(cwd, filepath.Join(cwd, ".beads"))
+}
+
 func runDone(cmd *cobra.Command, args []string) (retErr error) {
 	defer func() { telemetry.RecordDone(context.Background(), strings.ToUpper(doneStatus), retErr) }()
 	// Guard: Only polecats should call gt done
@@ -302,36 +316,42 @@ func runDone(cmd *cobra.Command, args []string) (retErr error) {
 	// assigned to this agent. This replaces reading agent_bead.hook_bead
 	// (hq-l6mm5: direct bead tracking instead of agent bead slot).
 	if issueID == "" && sender != "" {
-		bd := beads.New(cwd)
+		bd := newDoneBeads(cwd)
 		if hookIssue := findHookedBeadForAgent(bd, sender); hookIssue != "" {
 			issueID = hookIssue
 		}
 	}
 
-	// Write done-intent label EARLY, before push/MR operations.
-	// If gt done crashes after this point, the Witness can detect the intent
-	// and auto-nuke the zombie polecat.
-	//
-	// Also read existing checkpoints for resume capability (gt-aufru).
-	// If gt done was interrupted (SIGTERM, context exhaustion, SIGKILL),
-	// checkpoints indicate which stages completed. On re-invocation, we
-	// skip those stages to avoid repeating work or hitting errors.
+	// Write done-intent label + heartbeat when entering irreversible completion work.
+	// For COMPLETED exits, this is intentionally delayed until after preflight git
+	// validation to avoid mutating tracked runtime files before uncommitted checks.
 	checkpoints := map[DoneCheckpoint]string{}
-	if agentBeadID != "" {
-		bd := beads.New(cwd)
-		setDoneIntentLabel(bd, agentBeadID, exitType)
-		checkpoints = readDoneCheckpoints(bd, agentBeadID)
-		if len(checkpoints) > 0 {
-			fmt.Printf("%s Resuming gt done from checkpoint (previous run was interrupted)\n", style.Bold.Render("→"))
+	doneIntentSet := false
+	setDoneIntentAndHeartbeat := func() {
+		if doneIntentSet {
+			return
+		}
+		doneIntentSet = true
+		if agentBeadID != "" {
+			bd := newDoneBeads(cwd)
+			setDoneIntentLabel(bd, agentBeadID, exitType)
+			checkpoints = readDoneCheckpoints(bd, agentBeadID)
+			if len(checkpoints) > 0 {
+				fmt.Printf("%s Resuming gt done from checkpoint (previous run was interrupted)\n", style.Bold.Render("→"))
+			}
+		}
+		// Write heartbeat state="exiting" (gt-3vr5: heartbeat v2).
+		// Tells the witness we're in the gt done flow — trust the agent until
+		// heartbeat goes stale. No timer-based inference needed.
+		// Parallel to done-intent label for backwards compat during migration.
+		if sessionName := os.Getenv("GT_SESSION"); sessionName != "" && townRoot != "" {
+			polecat.TouchSessionHeartbeatWithState(townRoot, sessionName, polecat.HeartbeatExiting, "gt done", issueID)
 		}
 	}
 
-	// Write heartbeat state="exiting" (gt-3vr5: heartbeat v2).
-	// Tells the witness we're in the gt done flow — trust the agent until
-	// heartbeat goes stale. No timer-based inference needed.
-	// Parallel to done-intent label for backwards compat during migration.
-	if sessionName := os.Getenv("GT_SESSION"); sessionName != "" && townRoot != "" {
-		polecat.TouchSessionHeartbeatWithState(townRoot, sessionName, polecat.HeartbeatExiting, "gt done", issueID)
+	// Non-completed exits don't run completion preflight; set intent immediately.
+	if exitType != ExitCompleted {
+		setDoneIntentAndHeartbeat()
 	}
 
 	// Get configured default branch for this rig
@@ -395,7 +415,7 @@ func runDone(cmd *cobra.Command, args []string) (retErr error) {
 		// Must be checked before the zero-commit guard below (GH#2496).
 		isNoMergeTask := false
 		if issueID != "" {
-			noMergeBd := beads.New(cwd)
+			noMergeBd := newDoneBeads(cwd)
 			if noMergeIssue, showErr := noMergeBd.Show(issueID); showErr == nil {
 				if af := beads.ParseAttachmentFields(noMergeIssue); af != nil && af.NoMerge {
 					isNoMergeTask = true
@@ -411,6 +431,7 @@ func runDone(cmd *cobra.Command, args []string) (retErr error) {
 		// no_merge tasks (GH#2496) also bypass: non-code work has no commits by design.
 		// IMPORTANT: The error message must NOT mention --cleanup-status=clean.
 		// LLM agents read error messages and self-bypass (the original bug).
+		setDoneIntentAndHeartbeat()
 		if aheadCount == 0 {
 			if os.Getenv("GT_POLECAT") != "" && doneCleanupStatus != "clean" && !isNoMergeTask {
 				return fmt.Errorf("cannot complete: no commits on branch ahead of %s\n"+
@@ -434,7 +455,7 @@ func runDone(cmd *cobra.Command, args []string) (retErr error) {
 			// Normally the Refinery closes after merge, but with no MR, nothing
 			// would ever close the issue.
 			if issueID != "" {
-				bd := beads.New(cwd)
+				bd := newDoneBeads(cwd)
 
 				// Acceptance criteria gate: check for unchecked criteria before closing.
 				// If criteria exist and are unchecked, warn and skip close — the bead stays
@@ -536,7 +557,7 @@ func runDone(cmd *cobra.Command, args []string) (retErr error) {
 
 			// Close the base issue — no MR/refinery will close it
 			if issueID != "" {
-				directBd := beads.New(cwd)
+				directBd := newDoneBeads(cwd)
 				closeReason := fmt.Sprintf("Direct merge to %s (convoy strategy)", defaultBranch)
 				var closeErr error
 				for attempt := 1; attempt <= 3; attempt++ {
@@ -654,7 +675,7 @@ func runDone(cmd *cobra.Command, args []string) (retErr error) {
 
 		// Write push checkpoint for resume (gt-aufru)
 		if agentBeadID != "" {
-			cpBd := beads.New(cwd)
+			cpBd := newDoneBeads(cwd)
 			writeDoneCheckpoint(cpBd, agentBeadID, CheckpointPushed, branch)
 		}
 
@@ -667,11 +688,14 @@ func runDone(cmd *cobra.Command, args []string) (retErr error) {
 		// Initialize beads — warn if resolved to a local .beads/ (no redirect).
 		// Without a redirect, MR beads are invisible to the Refinery.
 		resolvedBeads := beads.ResolveBeadsDir(cwd)
+		if _, statErr := os.Stat(resolvedBeads); statErr != nil {
+			resolvedBeads = filepath.Join(cwd, ".beads")
+		}
 		if beads.IsLocalBeadsDir(cwd, resolvedBeads) {
 			fmt.Fprintf(os.Stderr, "WARNING: beads resolved to local dir %s (no shared-beads redirect)\n", resolvedBeads)
 			fmt.Fprintf(os.Stderr, "  MR beads written here will be invisible to the Refinery — run 'gt polecat repair' to fix\n")
 		}
-		bd := beads.NewWithBeadsDir(cwd, resolvedBeads)
+		bd := newDoneBeads(cwd)
 
 		// Check for no_merge flag - if set, skip merge queue and notify for review
 		sourceIssueForNoMerge, err := bd.Show(issueID)
@@ -921,7 +945,7 @@ func runDone(cmd *cobra.Command, args []string) (retErr error) {
 
 		// Write MR checkpoint for resume (gt-aufru)
 		if mrID != "" && agentBeadID != "" {
-			cpBd := beads.New(cwd)
+			cpBd := newDoneBeads(cwd)
 			writeDoneCheckpoint(cpBd, agentBeadID, CheckpointMRCreated, mrID)
 		}
 
@@ -956,7 +980,7 @@ notifyWitness:
 	// longer processes routine completions from these fields.
 	fmt.Printf("\nNotifying Witness...\n")
 	if agentBeadID != "" {
-		completionBd := beads.New(cwd)
+		completionBd := newDoneBeads(cwd)
 		meta := &beads.CompletionMetadata{
 			ExitType:       exitType,
 			MRID:           mrID,
@@ -979,7 +1003,7 @@ notifyWitness:
 
 	// Write witness notification checkpoint for resume (gt-aufru)
 	if agentBeadID != "" {
-		cpBd := beads.New(cwd)
+		cpBd := newDoneBeads(cwd)
 		writeDoneCheckpoint(cpBd, agentBeadID, CheckpointWitnessNotified, "ok")
 	}
 
@@ -1251,7 +1275,7 @@ func updateAgentStateOnDone(cwd, townRoot, exitType, issueID string) {
 		}
 	}
 
-	if hookedBeadID != "" && exitType != ExitDeferred {
+	if hookedBeadID != "" {
 		// BUG FIX (gt-pftz): Close hooked bead unless already terminal (closed/tombstone).
 		// Previously checked hookedBead.Status == StatusHooked, but polecats update
 		// their work bead to in_progress during work. The exact-match check caused
@@ -1261,6 +1285,21 @@ func updateAgentStateOnDone(cwd, townRoot, exitType, issueID string) {
 		// DEFERRED exits preserve the bead: work is paused, not done. The bead
 		// stays open/in_progress so it can be resumed on the next session.
 		if hookedBead, err := bd.Show(hookedBeadID); err == nil && !beads.IssueStatus(hookedBead.Status).IsTerminal() {
+			// DEFERRED usually preserves the hook bead for resume, but a hooked wisp
+			// indicates stale crash recovery state (base work bead already closed).
+			// In that case, force-close the stale wisp so it doesn't remain hooked.
+			if exitType == ExitDeferred {
+				if strings.Contains(hookedBead.ID, "-wisp-") {
+					if n := closeDescendants(bd, hookedBead.ID); n > 0 {
+						fmt.Fprintf(os.Stderr, "Closed %d stale molecule step(s) for %s\n", n, hookedBead.ID)
+					}
+					if closeErr := bd.ForceCloseWithReason("no-changes: stale crash wisp on deferred exit", hookedBead.ID); closeErr != nil && !errors.Is(closeErr, beads.ErrNotFound) {
+						fmt.Fprintf(os.Stderr, "Warning: couldn't close stale deferred wisp %s: %v\n", hookedBead.ID, closeErr)
+					}
+				}
+				goto doneHookCleanup
+			}
+
 			// BUG FIX: Close attached molecule (wisp) BEFORE closing hooked bead.
 			// When using formula-on-bead (gt sling formula --on bead), the base bead
 			// has attached_molecule pointing to the wisp. Without this fix, gt done
@@ -1302,6 +1341,7 @@ func updateAgentStateOnDone(cwd, townRoot, exitType, issueID string) {
 		}
 	}
 
+doneHookCleanup:
 	// No ClearHookBead call needed — agent bead hook slot is no longer maintained (hq-l6mm5).
 
 	// Purge closed ephemeral beads (wisps) accumulated during this and prior sessions.
