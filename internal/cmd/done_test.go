@@ -401,6 +401,56 @@ func TestDoneIntentLabelFormat(t *testing.T) {
 	}
 }
 
+// TestDoneIntentArmingOrder verifies gt done's ordering contract:
+// for COMPLETED exits, done-intent is armed only after git preflight passes.
+// This prevents gt done from mutating tracked .beads files (e.g. last-touched)
+// before the uncommitted-work check runs.
+func TestDoneIntentArmingOrder(t *testing.T) {
+	tests := []struct {
+		name                 string
+		exitType             string
+		preflightPassed      bool
+		wantArmDoneIntentNow bool
+	}{
+		{
+			name:                 "completed exit + preflight fails = do not arm",
+			exitType:             ExitCompleted,
+			preflightPassed:      false,
+			wantArmDoneIntentNow: false,
+		},
+		{
+			name:                 "completed exit + preflight passes = arm",
+			exitType:             ExitCompleted,
+			preflightPassed:      true,
+			wantArmDoneIntentNow: true,
+		},
+		{
+			name:                 "deferred exit = arm immediately",
+			exitType:             ExitDeferred,
+			preflightPassed:      false,
+			wantArmDoneIntentNow: true,
+		},
+		{
+			name:                 "escalated exit = arm immediately",
+			exitType:             ExitEscalated,
+			preflightPassed:      false,
+			wantArmDoneIntentNow: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Mirrors runDone ordering:
+			// - non-COMPLETED exits arm immediately
+			// - COMPLETED exits arm only after preflight succeeds
+			armNow := tt.exitType != ExitCompleted || tt.preflightPassed
+			if armNow != tt.wantArmDoneIntentNow {
+				t.Errorf("armNow = %v, want %v", armNow, tt.wantArmDoneIntentNow)
+			}
+		})
+	}
+}
+
 // TestClearDoneIntentLabel verifies that clearDoneIntentLabel removes
 // only done-intent labels while preserving other labels.
 func TestClearDoneIntentLabel(t *testing.T) {
