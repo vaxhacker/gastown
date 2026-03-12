@@ -372,7 +372,7 @@ func runDone(cmd *cobra.Command, args []string) (retErr error) {
 		if err != nil {
 			return fmt.Errorf("checking git status: %w", err)
 		}
-		if workStatus.HasUncommittedChanges && !workStatus.CleanExcludingRuntime() {
+		if workStatus.HasUncommittedChanges && !workStatus.HasOnlyRuntimeFileChanges() {
 			return fmt.Errorf("cannot complete: uncommitted changes would be lost\nCommit your changes first, or use --status DEFERRED to exit without completing\nUncommitted: %s", workStatus.String())
 		}
 

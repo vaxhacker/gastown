@@ -1692,6 +1692,52 @@ func TestCleanExcludingRuntime(t *testing.T) {
 	}
 }
 
+func TestHasOnlyRuntimeFileChanges(t *testing.T) {
+	tests := []struct {
+		name string
+		s    UncommittedWorkStatus
+		want bool
+	}{
+		{
+			name: "runtime-only modified and untracked files",
+			s: UncommittedWorkStatus{
+				HasUncommittedChanges: true,
+				ModifiedFiles:         []string{".beads/last-touched"},
+				UntrackedFiles:        []string{".runtime/state.json"},
+			},
+			want: true,
+		},
+		{
+			name: "runtime-only file changes with stash and unpushed commits",
+			s: UncommittedWorkStatus{
+				HasUncommittedChanges: true,
+				ModifiedFiles:         []string{".beads/last-touched"},
+				StashCount:            1,
+				UnpushedCommits:       3,
+			},
+			want: true,
+		},
+		{
+			name: "contains real file change",
+			s: UncommittedWorkStatus{
+				HasUncommittedChanges: true,
+				ModifiedFiles:         []string{"internal/cmd/done.go"},
+				UntrackedFiles:        []string{".beads/last-touched"},
+			},
+			want: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := tt.s.HasOnlyRuntimeFileChanges()
+			if got != tt.want {
+				t.Errorf("HasOnlyRuntimeFileChanges() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestCheckBranchContamination(t *testing.T) {
 	// Create a repo with main and a feature branch that diverges.
 	dir := initTestRepo(t) // has initial commit on default branch

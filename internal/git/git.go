@@ -1532,6 +1532,27 @@ func (s *UncommittedWorkStatus) CleanExcludingRuntime() bool {
 	return true
 }
 
+// HasOnlyRuntimeFileChanges returns true when all worktree file changes are
+// runtime artifacts (.beads/, .claude/, .runtime/, .logs/, __pycache__).
+// Unlike CleanExcludingRuntime, this intentionally ignores stash and unpushed
+// commit state because it's used to decide whether uncommitted FILE changes
+// would be lost by completion flows.
+func (s *UncommittedWorkStatus) HasOnlyRuntimeFileChanges() bool {
+	for _, f := range s.ModifiedFiles {
+		if !isGasTownRuntimePath(f) {
+			return false
+		}
+	}
+
+	for _, f := range s.UntrackedFiles {
+		if !isGasTownRuntimePath(f) {
+			return false
+		}
+	}
+
+	return true
+}
+
 // String returns a human-readable summary of uncommitted work.
 func (s *UncommittedWorkStatus) String() string {
 	var issues []string
