@@ -183,6 +183,7 @@ type MRAnomaly struct {
 	Detail   string        `json:"detail"`
 }
 
+
 // errMergeSlotTimeout is returned by acquireMainPushSlot when retries are
 // exhausted due to slot contention. Infrastructure errors (beads down,
 // permission errors) return a different error so callers can distinguish
@@ -280,17 +281,17 @@ func (e *Engineer) LoadConfig() error {
 	// Parse merge_queue section into our config struct
 	// We need special handling for poll_interval (string -> Duration)
 	var mqRaw struct {
-		Enabled              *bool                     `json:"enabled"`
-		OnConflict           *string                   `json:"on_conflict"`
-		RunTests             *bool                     `json:"run_tests"`
-		TestCommand          *string                   `json:"test_command"`
-		DeleteMergedBranches *bool                     `json:"delete_merged_branches"`
-		RetryFlakyTests      *int                      `json:"retry_flaky_tests"`
-		PollInterval         *string                   `json:"poll_interval"`
-		MaxConcurrent        *int                      `json:"max_concurrent"`
-		StaleClaimTimeout    *string                   `json:"stale_claim_timeout"`
-		Gates                map[string]*gateConfigRaw `json:"gates"`
-		GatesParallel        *bool                     `json:"gates_parallel"`
+		Enabled              *bool                      `json:"enabled"`
+		OnConflict           *string                    `json:"on_conflict"`
+		RunTests             *bool                      `json:"run_tests"`
+		TestCommand          *string                    `json:"test_command"`
+		DeleteMergedBranches *bool                      `json:"delete_merged_branches"`
+		RetryFlakyTests      *int                       `json:"retry_flaky_tests"`
+		PollInterval         *string                    `json:"poll_interval"`
+		MaxConcurrent        *int                       `json:"max_concurrent"`
+		StaleClaimTimeout    *string                    `json:"stale_claim_timeout"`
+		Gates                map[string]*gateConfigRaw  `json:"gates"`
+		GatesParallel        *bool                      `json:"gates_parallel"`
 	}
 
 	if err := json.Unmarshal(rawConfig.MergeQueue, &mqRaw); err != nil {
@@ -989,26 +990,13 @@ func (e *Engineer) HandleMRInfoFailure(mr *MRInfo, result ProcessResult) {
 		if err != nil {
 			_, _ = fmt.Fprintf(e.output, "[Engineer] Warning: failed to create conflict resolution task: %v\n", err)
 		} else if taskID != "" {
-			if err := e.recordConflictFailure(mr, taskID); err != nil {
-				_, _ = fmt.Fprintf(e.output, "[Engineer] Warning: failed to update MR %s conflict metadata: %v\n", mr.ID, err)
-			}
 			// Block the MR on the conflict resolution task using beads dependency
 			// When the task closes, the MR unblocks and re-enters the ready queue
 			if err := e.beads.AddDependency(mr.ID, taskID); err != nil {
 				_, _ = fmt.Fprintf(e.output, "[Engineer] Warning: failed to block MR on task: %v\n", err)
 			} else {
-				mr.BlockedBy = taskID
 				_, _ = fmt.Fprintf(e.output, "[Engineer] MR %s blocked on conflict task %s (non-blocking delegation)\n", mr.ID, taskID)
 			}
-		}
-		if err := e.ReleaseMR(mr.ID); err != nil {
-			_, _ = fmt.Fprintf(e.output, "[Engineer] Warning: failed to release MR %s after conflict: %v\n", mr.ID, err)
-		}
-	}
-
-	if !result.Conflict {
-		if err := e.recordRejectedFailure(mr, failureType, result.Error); err != nil {
-			_, _ = fmt.Fprintf(e.output, "[Engineer] Warning: failed to update beads for rejected MR %s: %v\n", mr.ID, err)
 		}
 	}
 
@@ -1019,79 +1007,6 @@ func (e *Engineer) HandleMRInfoFailure(mr *MRInfo, result ProcessResult) {
 	} else {
 		_, _ = fmt.Fprintln(e.output, "[Engineer] MR remains in queue for retry")
 	}
-}
-
-func (e *Engineer) recordConflictFailure(mr *MRInfo, taskID string) error {
-	if mr.ID == "" {
-		return nil
-	}
-
-	mrBead, err := e.beads.Show(mr.ID)
-	if err != nil {
-		return fmt.Errorf("fetching MR bead: %w", err)
-	}
-
-	mrFields := beads.ParseMRFields(mrBead)
-	if mrFields == nil {
-		mrFields = &beads.MRFields{}
-	}
-	mrFields.RetryCount = mr.RetryCount + 1
-	mrFields.ConflictTaskID = taskID
-	if mr.Target != "" {
-		if targetSHA, shaErr := e.git.Rev("origin/" + mr.Target); shaErr == nil && len(targetSHA) >= 8 {
-			mrFields.LastConflictSHA = targetSHA[:8]
-		}
-	}
-
-	newDesc := beads.SetMRFields(mrBead, mrFields)
-	empty := ""
-	return e.beads.Update(mr.ID, beads.UpdateOptions{
-		Description: &newDesc,
-		Assignee:    &empty,
-	})
-}
-
-func (e *Engineer) recordRejectedFailure(mr *MRInfo, failureType, failureMsg string) error {
-	if mr.ID != "" {
-		mrBead, err := e.beads.Show(mr.ID)
-		if err != nil {
-			return fmt.Errorf("fetching MR bead: %w", err)
-		}
-
-		mrFields := beads.ParseMRFields(mrBead)
-		if mrFields == nil {
-			mrFields = &beads.MRFields{}
-		}
-		mrFields.CloseReason = "rejected"
-		newDesc := beads.SetMRFields(mrBead, mrFields)
-		if err := e.beads.Update(mr.ID, beads.UpdateOptions{Description: &newDesc}); err != nil {
-			return fmt.Errorf("updating MR description: %w", err)
-		}
-
-		closeReason := fmt.Sprintf("rejected: %s - %s", failureType, failureMsg)
-		if err := e.beads.CloseWithReason(closeReason, mr.ID); err != nil {
-			return fmt.Errorf("closing MR bead: %w", err)
-		}
-	}
-
-	if mr.SourceIssue != "" {
-		open := "open"
-		empty := ""
-		if err := e.beads.Update(mr.SourceIssue, beads.UpdateOptions{
-			Status:   &open,
-			Assignee: &empty,
-		}); err != nil {
-			return fmt.Errorf("reopening source issue: %w", err)
-		}
-	}
-
-	if mr.AgentBead != "" {
-		if err := e.beads.UpdateAgentActiveMR(mr.AgentBead, ""); err != nil {
-			return fmt.Errorf("clearing agent active MR: %w", err)
-		}
-	}
-
-	return nil
 }
 
 // createConflictResolutionTaskForMR creates a dispatchable task for resolving merge conflicts.
