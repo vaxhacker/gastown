@@ -127,7 +127,7 @@ func SpawnPolecatForSling(rigName string, opts SlingSpawnOptions) (*SpawnedPolec
 
 	// Per-rig directory cap: prevent unbounded worktree accumulation even when
 	// polecats die quickly (tmux session count stays low).
-	const maxPolecatDirsPerRig = 30
+	const maxPolecatDirsPerRig = 100
 	rigPolecatDir := filepath.Join(townRoot, rigName, "polecats")
 	if entries, err := os.ReadDir(rigPolecatDir); err == nil {
 		dirCount := 0
