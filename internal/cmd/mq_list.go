@@ -65,6 +65,10 @@ func runMQList(cmd *cobra.Command, args []string) error {
 			if len(issue.BlockedBy) > 0 || issue.BlockedByCount > 0 {
 				continue // Skip blocked issues
 			}
+			// Skip MRs with unresolved rebase conflicts
+			if fields := beads.ParseMRFields(issue); fields != nil && fields.LastConflictSHA != "" {
+				continue
+			}
 			issues = append(issues, issue)
 		}
 	} else {
@@ -195,6 +199,8 @@ func runMQList(cmd *cobra.Command, args []string) error {
 		if issue.Status == "open" {
 			if len(issue.BlockedBy) > 0 || issue.BlockedByCount > 0 {
 				displayStatus = "blocked"
+			} else if fields != nil && fields.LastConflictSHA != "" {
+				displayStatus = "conflict"
 			} else {
 				displayStatus = "ready"
 			}
@@ -209,6 +215,8 @@ func runMQList(cmd *cobra.Command, args []string) error {
 			styledStatus = style.Warning.Render("active")
 		case "blocked":
 			styledStatus = style.Dim.Render("blocked")
+		case "conflict":
+			styledStatus = style.Error.Render("conflict")
 		case "closed":
 			styledStatus = style.Dim.Render("closed")
 		}
@@ -293,20 +301,27 @@ func runMQList(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	// Show blocking details below table
+	// Show blocking/conflict details below table
 	for _, item := range scored {
 		issue := item.issue
-		displayStatus := issue.Status
-		if issue.Status == "open" && (len(issue.BlockedBy) > 0 || issue.BlockedByCount > 0) {
-			displayStatus = "blocked"
+		fields := item.fields
+		displayID := issue.ID
+		if len(displayID) > 12 {
+			displayID = displayID[:12]
 		}
-		if displayStatus == "blocked" && len(issue.BlockedBy) > 0 {
-			displayID := issue.ID
-			if len(displayID) > 12 {
-				displayID = displayID[:12]
+
+		if issue.Status == "open" && (len(issue.BlockedBy) > 0 || issue.BlockedByCount > 0) {
+			if len(issue.BlockedBy) > 0 {
+				fmt.Printf("  %s %s\n", style.Dim.Render(displayID+":"),
+					style.Dim.Render(fmt.Sprintf("waiting on %s", issue.BlockedBy[0])))
+			}
+		} else if issue.Status == "open" && fields != nil && fields.LastConflictSHA != "" {
+			detail := fmt.Sprintf("rebase conflict at %s", fields.LastConflictSHA[:min(8, len(fields.LastConflictSHA))])
+			if fields.ConflictTaskID != "" {
+				detail += fmt.Sprintf(" (task: %s)", fields.ConflictTaskID)
 			}
 			fmt.Printf("  %s %s\n", style.Dim.Render(displayID+":"),
-				style.Dim.Render(fmt.Sprintf("waiting on %s", issue.BlockedBy[0])))
+				style.Error.Render(detail))
 		}
 	}
 
